@@ -2489,7 +2489,13 @@
             priceOriginal.textContent = `$${listing.originalPrice.toFixed(2)}`;
             priceDiscount.textContent = `-${listing.discount}%`;
             const savings = (listing.originalPrice - listing.price).toFixed(2);
-            priceSavings.textContent = `🔥 Flash sale · You save $${savings}`;
+            
+            // Show "Flash sale" prefix only if this listing has a flash sale cue
+            if (hasFlashSale(listing)) {
+                priceSavings.textContent = `🔥 Flash sale · You save $${savings}`;
+            } else {
+                priceSavings.textContent = `You save $${savings}`;
+            }
 
             productTitle.textContent = displayTitle;
             productSubtitle.textContent = product.subtitle;
