@@ -1,0 +1,2974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emu - Study Simulation</title>
+    <style>
+        /* ===== RESET & GLOBAL ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        .app-container {
+            max-width: 420px;
+            width: 100%;
+            background: #f5f5f5;
+            padding-bottom: 20px;
+            min-height: 100vh;
+        }
+
+        /* ===== TEMU HEADER ===== */
+        .emu-header {
+            background: #e43d2c;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .emu-logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .emu-logo span {
+            background: #ffd700;
+            color: #e43d2c;
+            padding: 0 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+
+        .emu-header-icons {
+            display: flex;
+            gap: 16px;
+            color: white;
+            font-size: 1.2rem;
+            align-items: center;
+        }
+
+        .view-cart-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.2s;
+        }
+
+        .view-cart-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ===== PROGRESS SECTION ===== */
+        .progress-section {
+            background: white;
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-text .product-name {
+            font-weight: 700;
+            color: #222;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: #e43d2c;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        /* ===== PRODUCT CARD ===== */
+        .product-card {
+            background: white;
+            margin: 0 0 12px 0;
+            border-radius: 0;
+            overflow: hidden;
+        }
+
+        /* ===== CAROUSEL ===== */
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            height: auto;
+            overflow: hidden;
+            background: #fafafa;
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 0.4s ease;
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #888;
+            background: #f0f0f0;
+            position: relative;
+        }
+
+        .carousel-slide img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(255, 107, 53, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
+            }
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .carousel-btn:hover {
+            background: white;
+        }
+        .carousel-btn.left {
+            left: 8px;
+        }
+        .carousel-btn.right {
+            right: 8px;
+        }
+
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 0;
+        }
+
+        .carousel-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.2);
+            display: inline-block;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .carousel-dots span.active {
+            background: #e43d2c;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        /* ===== PRICE SECTION ===== */
+        .price-section {
+            padding: 12px 16px 6px;
+            background: white;
+        }
+
+        .price-main {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .price-current {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #e43d2c;
+        }
+
+        .price-current small {
+            font-size: 1.2rem;
+        }
+
+        .price-original {
+            font-size: 0.9rem;
+            color: #999;
+            text-decoration: line-through;
+        }
+
+        .price-discount {
+            background: #ff6b35;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .price-savings {
+            color: #e43d2c;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* ===== PRODUCT TITLE ===== */
+        .product-title-section {
+            padding: 0 16px 10px;
+        }
+
+        .product-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #222;
+            line-height: 1.4;
+        }
+
+        .product-subtitle {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* ===== RATING BAR ===== */
+        .rating-bar {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid #f0f0f0;
+            border-bottom: 1px solid #f0f0f0;
+            background: #fafafa;
+            flex-wrap: wrap;
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 2px;
+            font-size: 1rem;
+            color: #ffb400;
+        }
+
+        .rating-stars .empty {
+            color: #ddd;
+        }
+
+        /* ===== GRADIENT STAR STYLES ===== */
+        .star-container {
+            position: relative;
+            display: inline-block;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+
+        .star-empty {
+            color: #ddd;
+        }
+
+        .star-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: #ffb400;
+            overflow: hidden;
+            white-space: nowrap;
+            width: 0%;
+        }
+
+        .rating-score {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #222;
+        }
+
+        .rating-count {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .rating-count .highlight {
+            color: #e43d2c;
+            font-weight: 600;
+        }
+
+        /* ===== VISCERAL CUES BAR ===== */
+        .visceral-cues {
+            padding: 8px 16px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            min-height: 44px;
+            align-items: center;
+        }
+
+        .visceral-cue {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 5px 14px;
+            border-radius: 20px;
+            border: none;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            animation: glow 2s infinite;
+        }
+
+        /* Individual cue colors based on type */
+        .visceral-cue.flash-sale {
+            background: linear-gradient(135deg, #ff6b35, #e43d2c);
+        }
+
+        .visceral-cue.low-stock {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        .visceral-cue.low-price {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+        }
+
+        .visceral-cue.flash-sale-ends {
+            background: linear-gradient(135deg, #9C27B0, #6A1B9A);
+        }
+
+        .visceral-cue.verified {
+            background: linear-gradient(135deg, #26A69A, #00695C);
+            animation: none;
+            box-shadow: 0 2px 8px rgba(38, 166, 154, 0.3);
+        }
+
+        /* ===== CARD VISCERAL CUES ===== */
+        .card-visceral-cues {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .card-visceral-cue {
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            border: none;
+            color: white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Individual card cue colors */
+        .card-visceral-cue.flash-sale {
+            background: linear-gradient(135deg, #ff6b35, #e43d2c);
+        }
+
+        .card-visceral-cue.low-stock {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        .card-visceral-cue.low-price {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+        }
+
+        .card-visceral-cue.flash-sale-ends {
+            background: linear-gradient(135deg, #9C27B0, #6A1B9A);
+        }
+
+        /* ===== REVIEWS ===== */
+        .reviews-section {
+            padding: 12px 16px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .section-header h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #222;
+        }
+
+        .review-item {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+
+        .review-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e43d2c;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .review-content {
+            flex: 1;
+        }
+
+        .review-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #222;
+        }
+
+        .review-stars {
+            color: #ffb400;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+        }
+
+        .review-text {
+            font-size: 0.8rem;
+            color: #333;
+            margin-top: 2px;
+            line-height: 1.4;
+        }
+
+        /* ===== SELLER SECTION ===== */
+        .seller-section {
+            padding: 12px 16px;
+            border-top: 4px solid #f5f5f5;
+        }
+
+        .seller-card {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .seller-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .seller-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e43d2c;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.8rem;
+        }
+
+        .seller-name {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #222;
+        }
+
+        .seller-stats {
+            font-size: 0.65rem;
+            color: #666;
+        }
+
+        .seller-stats .highlight {
+            color: #e43d2c;
+            font-weight: 600;
+        }
+
+        .seller-rating {
+            text-align: right;
+        }
+
+        .seller-rating .stars {
+            color: #ffb400;
+            font-size: 0.7rem;
+        }
+
+        .seller-rating .score {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #222;
+        }
+
+        .seller-rating .count {
+            font-size: 0.65rem;
+            color: #666;
+        }
+
+        /* ===== LISTING GRID (Page 1) ===== */
+        .listing-grid-page {
+            padding: 12px 16px;
+            background: white;
+        }
+
+        .listing-grid-page h4 {
+            font-size: 0.85rem;
+            color: #222;
+            margin-bottom: 10px;
+        }
+
+        .listing-grid-page .sub-heading {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .listing-grid-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .listing-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            text-align: left;
+            position: relative;
+        }
+
+        .listing-card:hover {
+            border-color: #e43d2c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .listing-card .card-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: #f0f0f0;
+            margin-bottom: 6px;
+        }
+
+        .listing-card .card-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #222;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 2.6em;
+            margin-bottom: 2px;
+        }
+
+        .listing-card .card-price {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #e43d2c;
+            margin: 2px 0;
+        }
+
+        .listing-card .card-rating {
+            font-size: 0.7rem;
+            color: #ffb400;
+        }
+
+        .listing-card .card-rating .count {
+            color: #666;
+            margin-left: 2px;
+        }
+
+        /* ===== PRODUCT DETAIL (Page 2) ===== */
+        .product-detail-page {
+            display: none;
+        }
+
+        .product-detail-page.active {
+            display: block;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #e43d2c;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .back-btn:hover {
+            background: #fff5f0;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .action-section {
+            padding: 12px 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-btn.primary {
+            background: #e43d2c;
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            background: #cc3525;
+            transform: scale(1.01);
+        }
+
+        .action-btn.primary.in-cart {
+            background: #2e7d32;
+        }
+
+        .action-btn.primary.in-cart:hover {
+            background: #1b5e20;
+        }
+
+        /* ===== NAVIGATION ===== */
+        .nav-section {
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+
+        .nav-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.2s;
+        }
+
+        .nav-btn.prev {
+            background: #f0f0f0;
+            color: #555;
+        }
+
+        .nav-btn.prev:hover {
+            background: #e0e0e0;
+        }
+
+        .nav-btn.next {
+            background: #e43d2c;
+            color: white;
+        }
+
+        .nav-btn.next:hover {
+            background: #cc3525;
+        }
+
+        .nav-btn.next:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .nav-btn.next.locked {
+            background: #ff9800;
+        }
+
+        .nav-btn.next.locked:hover {
+            background: #e68900;
+        }
+
+        /* ===== CUSTOM CONFIRM POPUP ===== */
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .popup-overlay.active {
+            display: flex;
+        }
+
+        .popup-box {
+            background: white;
+            border-radius: 16px;
+            padding: 24px 20px 20px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .popup-box .popup-icon {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .popup-box .popup-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #222;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .popup-box .popup-message {
+            font-size: 0.9rem;
+            color: #555;
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .popup-box .popup-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .popup-box .popup-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .popup-box .popup-buttons .cancel-btn {
+            background: #f0f0f0;
+            color: #555;
+        }
+
+        .popup-box .popup-buttons .cancel-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .popup-box .popup-buttons .confirm-btn {
+            background: #e43d2c;
+            color: white;
+        }
+
+        .popup-box .popup-buttons .confirm-btn:hover {
+            background: #cc3525;
+        }
+
+        /* ===== VIEW CART PAGE ===== */
+        .cart-page {
+            display: none;
+            background: white;
+            min-height: 80vh;
+        }
+
+        .cart-page.active {
+            display: block;
+        }
+
+        .cart-header {
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cart-header .back-to-shop {
+            background: none;
+            border: none;
+            color: #e43d2c;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cart-header .back-to-shop:hover {
+            text-decoration: underline;
+        }
+
+        .cart-header h2 {
+            font-size: 1.1rem;
+            color: #222;
+        }
+
+        .cart-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .cart-empty .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .cart-empty h3 {
+            font-size: 1.1rem;
+            color: #222;
+            margin-bottom: 8px;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .cart-item:hover {
+            background: #fafafa;
+        }
+
+        .cart-item .item-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: #f0f0f0;
+            flex-shrink: 0;
+        }
+
+        .cart-item .item-info {
+            flex: 1;
+        }
+
+        .cart-item .item-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #222;
+        }
+
+        .cart-item .item-details {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .cart-item .item-price {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #e43d2c;
+        }
+
+        .cart-item .item-status {
+            font-size: 0.6rem;
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        .cart-footer {
+            padding: 16px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+
+        .cart-footer .complete-btn {
+            padding: 14px 40px;
+            background: #e43d2c;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cart-footer .complete-btn:hover {
+            background: #cc3525;
+        }
+
+        .cart-footer .complete-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* ===== COMPLETION PAGE ===== */
+        .completion-page {
+            display: none;
+            background: white;
+            min-height: 80vh;
+            text-align: center;
+            padding: 60px 30px;
+        }
+
+        .completion-page.active {
+            display: block;
+        }
+
+        .completion-page .complete-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .completion-page h2 {
+            font-size: 1.5rem;
+            color: #222;
+            margin-bottom: 12px;
+        }
+
+        .completion-page p {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.6;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .completion-page .highlight-text {
+            color: #e43d2c;
+            font-weight: 600;
+        }
+
+        /* ===== STATUS ===== */
+        #status-msg {
+            font-size: 0.75rem;
+            color: #2e7d32;
+            text-align: center;
+            padding: 4px 16px;
+            min-height: 1.5rem;
+        }
+
+        /* ===== HIDDEN DATA LOG ===== */
+        #data-log {
+            display: none;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 420px) {
+            .carousel-container {
+                height: auto;
+            }
+            .price-current {
+                font-size: 1.5rem;
+            }
+            .listing-grid-cards {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .listing-card {
+                padding: 8px;
+            }
+            .listing-card .card-image {
+                height: 90px;
+            }
+            .listing-card .card-price {
+                font-size: 0.95rem;
+            }
+            .listing-card .card-title {
+                font-size: 0.65rem;
+            }
+            .card-visceral-cue {
+                font-size: 0.45rem;
+                padding: 1px 6px;
+            }
+            .popup-box {
+                padding: 20px 16px 16px;
+            }
+            .view-cart-btn {
+                font-size: 0.65rem;
+                padding: 4px 10px;
+            }
+            .emu-header-icons {
+                gap: 10px;
+            }
+        }
+
+        /* ===== CART PAGE HIDDEN ELEMENTS ===== */
+        .cart-page .progress-section,
+        .cart-page .nav-section,
+        .cart-page #status-msg {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container" id="app">
+
+        <!-- ===== EMU HEADER ===== -->
+            <div class="emu-header">
+                <div class="emu-logo">Emu <span>STUDY</span></div>
+                <div class="emu-header-icons">
+                    <button class="view-cart-btn" id="viewCartBtn">🛒 View Cart</button>
+                </div>
+            </div>
+
+        <!-- ===== PROGRESS SECTION ===== -->
+        <div class="progress-section" id="progressSection">
+            <div class="progress-text">
+                <span><span class="product-name" id="productNameDisplay">Rolling Storage Cart</span></span>
+                <span>Product <span id="currentProductNum">1</span> of 3</span>
+            </div>
+            <div class="progress-bar">
+                <div class="fill" id="progressFill" style="width:0%"></div>
+            </div>
+        </div>
+
+        <!-- ===== PRODUCT CARD ===== -->
+        <div class="product-card" id="productCard">
+
+            <!-- ============================================================ -->
+            <!-- PAGE 1: LISTING GRID -->
+            <!-- ============================================================ -->
+            <div class="listing-grid-page" id="listingGridPage">
+                <h4>Select a listing to view:</h4>
+                <div class="sub-heading">Click on any listing to see full details</div>
+                <div class="listing-grid-cards" id="listingGridCards">
+                    <!-- Generated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- PAGE 2: PRODUCT DETAIL -->
+            <!-- ============================================================ -->
+            <div class="product-detail-page" id="productDetailPage">
+
+                <!-- Back Button -->
+                <button class="back-btn" id="backToListingBtn">← Back to listings</button>
+
+                <!-- Carousel -->
+                <div class="carousel-container">
+                    <div class="carousel-track" id="carouselTrack">
+                        <div class="carousel-slide" id="slide1">
+                            <img id="carouselImage1" src="" alt="Product image" />
+                        </div>
+                        <div class="carousel-slide" id="slide2">
+                            <img id="carouselImage2" src="" alt="Product image" />
+                        </div>
+                        <div class="carousel-slide" id="slide3">
+                            <img id="carouselImage3" src="" alt="Product image" />
+                        </div>
+                    </div>
+                    <button class="carousel-btn left" id="prevBtn">‹</button>
+                    <button class="carousel-btn right" id="nextBtn">›</button>
+                </div>
+                <div class="carousel-dots" id="dotsContainer"></div>
+
+                <!-- Price -->
+                <div class="price-section">
+                    <div class="price-main">
+                        <span class="price-current" id="priceCurrent"><small>$</small>79.<small>99</small></span>
+                        <span class="price-original" id="priceOriginal">$199.99</span>
+                        <span class="price-discount" id="priceDiscount">-60%</span>
+                    </div>
+                    <div class="price-savings" id="priceSavings">🔥 Flash sale · You save $120.00</div>
+                </div>
+
+                <!-- Title -->
+                <div class="product-title-section">
+                    <div class="product-title" id="productTitle">Rolling Cart</div>
+                    <div class="product-subtitle" id="productSubtitle">For pantry bedroom kitchen · 3 tiers · Easy assembly</div>
+                </div>
+
+                <!-- Rating -->
+                <div class="rating-bar">
+                    <div class="rating-stars" id="productStars">
+                        <span>★</span><span>★</span><span>★</span><span>★</span><span class="empty">★</span>
+                    </div>
+                    <span class="rating-score" id="ratingScore">4.2</span>
+                    <span class="rating-count"><span class="highlight" id="reviewCount">1,847</span> reviews</span>
+                </div>
+
+                <!-- Visceral Cues -->
+                <div class="visceral-cues" id="visceralCuesContainer">
+                    <!-- This container is populated by JavaScript -->
+                </div>
+
+                <!-- Reviews -->
+                <div class="reviews-section">
+                    <div class="section-header">
+                        <h3>📝 Customer Reviews</h3>
+                    </div>
+                    <div id="reviewsContainer">
+                        <div class="review-item">
+                            <div class="review-avatar">JD</div>
+                            <div class="review-content">
+                                <div class="review-name">Jessica D.</div>
+                                <div class="review-stars">★★★★★</div>
+                                <div class="review-text" id="reviewText1">"Great quality for the price!"</div>
+                            </div>
+                        </div>
+                        <div class="review-item">
+                            <div class="review-avatar">MR</div>
+                            <div class="review-content">
+                                <div class="review-name">Mike R.</div>
+                                <div class="review-stars">★★★★☆</div>
+                                <div class="review-text" id="reviewText2">"Good product, shipping was fast."</div>
+                            </div>
+                        </div>
+                        <div class="review-item">
+                            <div class="review-avatar">SL</div>
+                            <div class="review-content">
+                                <div class="review-name">Sarah L.</div>
+                                <div class="review-stars">★★★★★</div>
+                                <div class="review-text" id="reviewText3">"Highly recommend this seller!"</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seller -->
+                <div class="seller-section">
+                    <div class="section-header">
+                        <h3>🏪 Seller Information</h3>
+                    </div>
+                    <div class="seller-card">
+                        <div class="seller-info">
+                            <div class="seller-icon" id="sellerIcon">ST</div>
+                            <div>
+                                <div class="seller-name" id="sellerName">ShopTop Store</div>
+                                <div class="seller-stats">
+                                    <span class="highlight" id="sellerFollowers">8.2K</span> followers
+                                </div>
+                            </div>
+                        </div>
+                        <div class="seller-rating">
+                            <div class="stars" id="sellerStars">★★★★★</div>
+                            <div class="score" id="sellerScore">4.8</div>
+                            <div class="count" id="sellerReviewCount">(2,154 reviews)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-section">
+                    <button class="action-btn primary" id="addToCartBtn">
+                        🛒 Add to Cart
+                    </button>
+                </div>
+            </div>
+            <!-- End Product Detail Page -->
+
+            <!-- Status -->
+            <div id="status-msg"></div>
+
+            <!-- Navigation -->
+            <div class="nav-section" id="navSection">
+                <button class="nav-btn prev" id="prevProductBtn">← Previous Product</button>
+                <button class="nav-btn next" id="nextProductBtn">Next Product →</button>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- VIEW CART PAGE -->
+        <!-- ============================================================ -->
+        <div class="cart-page" id="cartPage">
+            <div class="cart-header">
+                <button class="back-to-shop" id="backToShopBtn">← Back to Shop</button>
+                <h2>🛒 Your Cart</h2>
+            </div>
+            <div id="cartItemsContainer">
+                <!-- Generated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- COMPLETION PAGE -->
+        <!-- ============================================================ -->
+        <div class="completion-page" id="completionPage">
+            <div class="complete-icon">✅</div>
+            <h2>Shopping Complete!</h2>
+            <p>
+                You have successfully completed the shopping task.<br /><br />
+                You can now <span class="highlight-text">close this tab</span> and 
+                return to the Qualtrics survey to continue.
+            </p>
+        </div>
+
+        <!-- ===== CUSTOM CONFIRM POPUP ===== -->
+        <div class="popup-overlay" id="popupOverlay">
+            <div class="popup-box">
+                <div class="popup-icon">🛒</div>
+                <div class="popup-title">Replace Cart Item?</div>
+                <div class="popup-message" id="popupMessage">Adding this to cart will remove your previous selection.</div>
+                <div class="popup-buttons">
+                    <button class="cancel-btn" id="popupCancel">Cancel</button>
+                    <button class="confirm-btn" id="popupConfirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== HIDDEN DATA LOG ===== -->
+        <div id="data-log"></div>
+    </div>
+
+    <script>
+        // ================================================================
+        // 1. PRODUCT DATA
+        // ================================================================
+        
+        const IMAGE_BASE = 'images/';
+        
+        // Fisher-Yates shuffle (unbiased)
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+        
+        // ================================================================
+        // RANDOMIZATION STRATEGY (for psychology research - prevents order effects)
+        // ================================================================
+        // We use a "circular shift" approach:
+        //   1. Randomly pick an offset (0-7) for each product
+        //   2. Shift the underlying listings array by that offset
+        //   3. Each displayed position is then labeled "Product #N" (N = position, 1-8)
+        //
+        // This means:
+        //   - The displayed ORDER of labels is always #1, #2, ..., #8 (consistent UX)
+        //   - BUT which actual listing data appears at each label is randomized
+        //   - The same listing data always carries its identity (via `_originalIndex`)
+        //     so data analysis can trace which true listing was chosen.
+        //
+        // Example: If offset = 3 for product 1, then:
+        //   - Display #1 shows what was originally listing 4
+        //   - Display #2 shows what was originally listing 5
+        //   - ...
+        //   - Display #8 shows what was originally listing 3
+        //
+        // Data captured still references the true listing via `_originalIndex` and
+        // `listingId`, so analysis is not affected by the display randomization.
+        // ================================================================
+        
+        function createRandomizedListings(originalListings, productId) {
+            // Step 1: Determine a random offset for this product
+            const offset = Math.floor(Math.random() * originalListings.length);
+            
+            // Step 2: Create the circularly-shifted array
+            const shifted = [];
+            for (let i = 0; i < originalListings.length; i++) {
+                const originalIdx = (i + offset) % originalListings.length;
+                // Keep a reference to the true original index for data analysis
+                shifted.push({
+                    ...originalListings[originalIdx],
+                    _originalIndex: originalIdx
+                });
+            }
+            
+            // Log the offset for this product (useful for debugging / verification)
+            console.log(`🎲 Product ${productId} randomized with offset ${offset} (display #1 = true listing #${offset + 1})`);
+            
+            return { listings: shifted, offset: offset };
+        }
+        
+        // Helper function to format visceral cues with emojis and determine CSS class
+        function formatVisceralCue(cue, listing) {
+            if (cue === 'Low stock') {
+                // Cache the random number on the listing object so it stays consistent
+                if (listing && listing._lowStockNumber === undefined) {
+                    listing._lowStockNumber = Math.floor(Math.random() * 9) + 1; // 1-9
+                }
+                const num = (listing && listing._lowStockNumber !== undefined) 
+                    ? listing._lowStockNumber 
+                    : Math.floor(Math.random() * 9) + 1;
+                return { text: `📦 Only ${num} left`, cssClass: 'low-stock' };
+            }
+            
+            const cueMap = {
+                'Flash sale': { text: '🔥 Flash Sale', cssClass: 'flash-sale' },
+                'Low price': { text: '💰 Low Price', cssClass: 'low-price' },
+                'Flash sale ends soon': { text: '⏰ Flash Sale Ends', cssClass: 'flash-sale-ends' }
+            };
+            return cueMap[cue] || { text: cue, cssClass: '' };
+        }
+        
+        const rawProducts = [{
+            id: 1,
+            name: 'Rolling Storage Cart',
+            subtitle: 'For pantry bedroom kitchen · 3 tiers · Easy assembly',
+            listings: [{
+                id: 1,
+                type: 'scam',
+                scamCues: ['Mismatches across images', 'Low num of reviews'],
+                visceralCues: ['Flash sale', 'Low stock'],
+                title: 'Rolling Cart #1',
+                images: [
+                    IMAGE_BASE + 'rolling-cart/listing5/1.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing5/2.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing5/3.jpg'
+                ],
+                price: 20.00,
+                originalPrice: 45.65,
+                rating: 4.3,
+                reviews: 18,
+                sellerName: 'QuickShip Deals',
+                sellerPositive: 89,
+                sellerFollowers: 342,
+                sellerRating: 4.7,
+                reviewTexts: [
+                    { name: 'Amanda K.', stars: 5, text: 'Fast shipping and great deal!' },
+                    { name: 'kirin308', stars: 3, text: 'works fine and easy assembly. product is much smaller than i expected.' },
+                    { name: 'Dylan T.', stars: 5, text: 'Sturdy and fits well in my kitchen.' }
+                ]
+            }, {
+                id: 2,
+                type: 'scam',
+                scamCues: ['Mismatches across images', 'Suspicious seller'],
+                visceralCues: ['Low price'],
+                title: 'Rolling Cart #2',
+                images: [
+                    IMAGE_BASE + 'rolling-cart/listing6/1.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing6/2.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing6/3.jpg'
+                ],
+                price: 10.00,
+                originalPrice: 21.99,
+                rating: 4.6,
+                reviews: 921,
+                sellerName: 'MegaSave Mart',
+                sellerPositive: 41,
+                sellerFollowers: 567,
+                sellerRating: 2.9,
+                reviewTexts: [
+                    { name: 'Jennifer', stars: 5, text: '' },
+                    { name: 'Sam P.', stars: 5, text: '' },
+                    { name: 'Tom123', stars: 2, text: '' }
+                ]
+            }, {
+                id: 3,
+                type: 'scam',
+                scamCues: ['Low num of reviews'],
+                visceralCues: ['Flash sale', 'Low price'],
+                title: 'Rolling Cart #3',
+                images: [
+                    IMAGE_BASE + 'rolling-cart/listing7/1.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing7/2.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing7/3.jpg'
+                ],
+                price: 5.00,
+                originalPrice: 11.79,
+                rating: 5,
+                reviews: 0,
+                sellerName: 'TopDeals Co',
+                sellerPositive: 89,
+                sellerFollowers: 8142,
+                sellerRating: 4.2,
+                reviewTexts: []
+            }, {
+                id: 4,
+                type: 'scam',
+                scamCues: ['Suspicious seller'],
+                visceralCues: ['Low stock'],
+                title: 'Rolling Cart #4',
+                images: [
+                    IMAGE_BASE + 'rolling-cart/listing8/1.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing8/2.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing8/3.jpg'
+                ],
+                price: 25.00,
+                originalPrice:50.99,
+                rating: 4.9,
+                reviews: 813,
+                sellerName: 'DiscountHub',
+                sellerPositive: 21,
+                sellerFollowers: 1024,
+                sellerRating: 3.0,
+                reviewTexts: [
+                    { name: 'ajlekr930', stars: 5, text: '' },
+                    { name: 'sp00x', stars: 2, text: '' },
+                    { name: 'David', stars: 5, text: 'Love it!' }
+                ]
+            }, {
+                id: 5,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: ['Flash sale'],
+                title: 'Rolling Cart #5',
+                images: [
+                    IMAGE_BASE + 'rolling-cart/listing1/1.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing1/2.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing1/3.jpg'
+                ],
+                price: 20.00,
+                originalPrice: 45.95,
+                rating: 4.8,
+                reviews: 847,
+                sellerName: 'HomeStyle Store',
+                sellerPositive: 94,
+                sellerFollowers: 5230,
+                sellerRating: 4.5,
+                reviewTexts: [
+                    { name: 'sp00k3', stars: 5, text: 'Love it. My bedroom is more organized now and I can move my stuff around easily.' },
+                    { name: 'ashlily', stars: 4, text: 'Delivery was slow but the product itself is good.' },
+                    { name: 'Jen99', stars: 5, text: 'Was easy to assemble, great quality for the price!' }
+                ]
+            }, {
+                id: 6,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: ['Low stock', 'Low price'],
+                title: 'Rolling Cart #6',
+                images: [
+                    IMAGE_BASE + 'rolling-cart/listing2/1.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing2/2.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing2/3.jpg'
+                ],
+                price: 10.00,
+                originalPrice: 20.50,
+                rating: 4.9,
+                reviews: 723,
+                sellerName: 'ModernHome Co',
+                sellerPositive: 97,
+                sellerFollowers: 8890,
+                sellerRating: 4.9,
+                reviewTexts: [
+                    { name: 'cherripi', stars: 5, text: '' },
+                    { name: 'jjd', stars: 5, text: '' },
+                    { name: 'Pritchet', stars: 5, text: 'good.' }
+                ]
+            }, {
+                id: 7,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: [],
+                title: 'Rolling Cart #7',
+                images: [
+                    IMAGE_BASE + 'rolling-cart/listing3/1.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing3/2.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing3/3.jpg'
+                ],
+                price: 25.00,
+                originalPrice: 55.50,
+                rating: 4.8,
+                reviews: 915,
+                sellerName: 'QualityFurniture',
+                sellerPositive: 94,
+                sellerFollowers: 7210,
+                sellerRating: 4.8,
+                reviewTexts: [
+                    { name: 'lo9k38hs', stars: 5, text: 'product is good. customer service was also quick and helpful.' },
+                    { name: 'careblear', stars: 5, text: '' },
+                    { name: 'anthony13', stars: 5, text: 'Happy with this product!' }
+                ]
+            }, {
+                id: 8,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: ['Low price'],
+                title: 'Rolling Cart #8',
+                images: [
+                    IMAGE_BASE + 'rolling-cart/listing4/1.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing4/2.jpg',
+                    IMAGE_BASE + 'rolling-cart/listing4/3.jpg'
+                ],
+                price: 5.00,
+                originalPrice: 11.99,
+                rating: 4.8,
+                reviews: 208,
+                sellerName: 'ElegantLiving',
+                sellerPositive: 95,
+                sellerFollowers: 5678,
+                sellerRating: 4.9,
+                reviewTexts: [
+                    { name: 'finh', stars: 5, text: 'happy with it' },
+                    { name: 'clsttlw', stars: 5, text: 'Not the best quality, but I got what I paid for.' },
+                    { name: '903j9x45', stars: 4, text: '' }
+                ]
+            }]
+        }, {
+            id: 2,
+            name: 'Pool Shade',
+            subtitle: 'UV Protection · Waterproof · Easy Install',
+            listings: [{
+                id: 1,
+                type: 'scam',
+                scamCues: ['Low num of reviews', 'Suspicious seller'],
+                visceralCues: ['Flash sale', 'Low stock'],
+                title: 'Pool Shade #1',
+                images: [
+                    IMAGE_BASE + 'pool-shade/listing5/1.jpg',
+                    IMAGE_BASE + 'pool-shade/listing5/2.jpg',
+                    IMAGE_BASE + 'pool-shade/listing5/3.jpg'
+                ],
+                price: 40.00,
+                originalPrice: 89.99,
+                rating: 4.6,
+                reviews: 7,
+                sellerName: 'BeachBargains',
+                sellerPositive: 58,
+                sellerFollowers: 289,
+                sellerRating: 2.1,
+                reviewTexts: [
+                    { name: 'poolfan42', stars: 1, text: 'The shade is smaller than advertised. Disappointed.' },
+                    { name: 'sunny_d', stars: 5, text: 'Arrived quick, have yet to try it out.' },
+                    { name: 'freezy', stars: 4, text: '' }
+                ]
+            }, {
+                id: 2,
+                type: 'scam',
+                scamCues: ['Mismatches across images', 'Low num of reviews'],
+                visceralCues: ['Low stock'],
+                title: 'Pool Shade #2',
+                images: [
+                    IMAGE_BASE + 'pool-shade/listing6/1.jpg',
+                    IMAGE_BASE + 'pool-shade/listing6/2.jpg',
+                    IMAGE_BASE + 'pool-shade/listing6/3.jpg'
+                ],
+                price: 25.00,
+                originalPrice: 59.99,
+                rating: 5,
+                reviews: 0,
+                sellerName: 'SunShield Deals',
+                sellerPositive: 35,
+                sellerFollowers: 134,
+                sellerRating: 2.7,
+                reviewTexts: []
+            }, {
+                id: 3,
+                type: 'scam',
+                scamCues: ['Mismatches across images'],
+                visceralCues: ['Flash sale', 'Low price'],
+                title: 'Pool Shade #3',
+                images: [
+                    IMAGE_BASE + 'pool-shade/listing7/1.jpg',
+                    IMAGE_BASE + 'pool-shade/listing7/2.jpg',
+                    IMAGE_BASE + 'pool-shade/listing7/3.jpg'
+                ],
+                price: 15.00,
+                originalPrice: 30.00,
+                rating: 4.8,
+                reviews: 796,
+                sellerName: 'PoolPro',
+                sellerPositive: 72,
+                sellerFollowers: 678,
+                sellerRating: 4.5,
+                reviewTexts: [
+            { name: 'poolfan42', stars: 2, text: 'The shade is smaller than advertised. Disappointed.' },
+            { name: 'sunny_d', stars: 5, text: '' },
+            { name: 'breezy', stars: 5, text: 'It works but the quality is questionable.' }
+        ]
+            }, {
+                id: 4,
+                type: 'scam',
+                scamCues: ['Low num of reviews'],
+                visceralCues: ['Flash sale'],
+                title: 'Pool Shade #4',
+                images: [
+                    IMAGE_BASE + 'pool-shade/listing8/1.jpg',
+                    IMAGE_BASE + 'pool-shade/listing8/2.jpg',
+                    IMAGE_BASE + 'pool-shade/listing8/3.jpg'
+                ],
+                price: 50.00,
+                originalPrice: 109.99,
+                rating: 4.7,
+                reviews: 9,
+                sellerName: 'AquaDeals',
+                sellerPositive: 45,
+                sellerFollowers: 823,
+                sellerRating: 4.5,
+                reviewTexts: [
+                    { name: 'deborah_v', stars: 5, text: '' },
+                    { name: 'brandon26', stars: 2, text: '' },
+                    { name: 'outdoormom', stars: 4, text: 'Works well, shipping took forever though.' }
+                ]
+            }, {
+                id: 5,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: [''],
+                title: 'Pool Shade #5',
+                images: [
+                    IMAGE_BASE + 'pool-shade/listing1/1.jpg',
+                    IMAGE_BASE + 'pool-shade/listing1/2.jpg',
+                    IMAGE_BASE + 'pool-shade/listing1/3.jpg'
+                ],
+                price: 25.00,
+                originalPrice: 55.99,
+                rating: 4.9,
+                reviews: 912,
+                sellerName: 'SunGuard',
+                sellerPositive: 96,
+                sellerFollowers: 6789,
+                sellerRating: 4.9,
+                reviewTexts: [
+                    { name: 'neighbor_dan', stars: 5, text: 'Installed this over my pool deck. Keeps the area cool and looks great!' },
+                    { name: 'jennybee', stars: 5, text: 'Good quality. Only wish it came in more colors.' },
+                    { name: 'f4mguy', stars: 5, text: 'Exactly as described. The kids love playing under it.' }
+                ]
+            }, {
+                id: 6,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: ['Low stock', 'Low price'],
+                title: 'Pool Shade #6',
+                images: [
+                    IMAGE_BASE + 'pool-shade/listing2/1.jpg',
+                    IMAGE_BASE + 'pool-shade/listing2/2.jpg',
+                    IMAGE_BASE + 'pool-shade/listing2/3.jpg'
+                ],
+                price: 15.00,
+                originalPrice: 35.99,
+                rating: 4.2,
+                reviews: 314,
+                sellerName: 'OutdoorLiving',
+                sellerPositive: 94,
+                sellerFollowers: 5678,
+                sellerRating: 4.5,
+                reviewTexts: [
+                    { name: 'garden_lover', stars: 5, text: 'Great coverage! My patio is now usable even in peak afternoon heat.' },
+                    { name: 's3_45d2s', stars: 3, text: 'It works but the packaging was damaged. Shade itself is fine.' },
+                    { name: 'gma_karen', stars: 4, text: 'A bit pricey but the quality is there. Happy with my purchase.' }
+                ]
+            }, {
+                id: 7,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: [],
+                title: 'Pool Shade #7',
+                images: [
+                    IMAGE_BASE + 'pool-shade/listing3/1.jpg',
+                    IMAGE_BASE + 'pool-shade/listing3/2.jpg',
+                    IMAGE_BASE + 'pool-shade/listing3/3.jpg'
+                ],
+                price: 50.00,
+                originalPrice: 99.99,
+                rating: 4.0,
+                reviews: 723,
+                sellerName: 'PatioStyle',
+                sellerPositive: 92,
+                sellerFollowers: 4890,
+                sellerRating: 4.3,
+                reviewTexts: [
+                    { name: 'marcus_h', stars: 4, text: 'Solid construction. Holds up well in wind and rain.' },
+                    { name: 'golf4life', stars: 5, text: 'Great buy. My wife loves the shade it provides.' },
+                    { name: 'nanabear', stars: 4, text: 'Good UV protection. Would recommend.' }
+                ]
+            }, {
+                id: 8,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: ['Flash sale', 'Low stock'],
+                title: 'Pool Shade #8',
+                images: [
+                    IMAGE_BASE + 'pool-shade/listing4/1.jpg',
+                    IMAGE_BASE + 'pool-shade/listing4/2.jpg',
+                    IMAGE_BASE + 'pool-shade/listing4/3.jpg'
+                ],
+                price: 40.00,
+                originalPrice: 89.99,
+                rating: 4.4,
+                reviews: 1023,
+                sellerName: 'ShadePro',
+                sellerPositive: 97,
+                sellerFollowers: 7123,
+                sellerRating: 4.8,
+                reviewTexts: [
+                    { name: 'poolside_emma', stars: 5, text: 'Love this shade! The fabric is high quality and it was easy to install.' },
+                    { name: 'dad_of_2', stars: 5, text: 'I was skeptical at first but this is a solid product. Good value.' },
+                    { name: 'c6_n40xr', stars: 4, text: '' }
+                ]
+            }]
+        }, {
+            id: 3,
+            name: 'Handheld Vacuum',
+            subtitle: 'Cordless · 20kPa Suction · HEPA Filter',
+            listings: [{
+                id: 1,
+                type: 'scam',
+                scamCues: ['Mismatches across images', 'Suspicious seller'],
+                visceralCues: ['Flash sale', 'Low price'],
+                title: 'Handheld Vacuum #1',
+                images: [
+                    IMAGE_BASE + 'vacuum/listing1/1.jpg',
+                    IMAGE_BASE + 'vacuum/listing1/2.jpg',
+                    IMAGE_BASE + 'vacuum/listing1/3.jpg'
+                ],
+                price: 15.00,
+                originalPrice: 33.50,
+                discount: 80,
+                rating: 4.8,
+                reviews: 987,
+                sellerName: 'CleanBargains',
+                sellerPositive: 55,
+                sellerFollowers: 312,
+                sellerRating: 2.3,
+                reviewTexts: [
+                    { name: 'annanan', stars: 5, text: '' },
+                    { name: 'kel_894', stars: 2, text: 'Product was damaged while shipping, did not work.' },
+                    { name: 'de_35d9d', stars: 5, text: '' }
+                ]
+            }, {
+                id: 2,
+                type: 'scam',
+                scamCues: ['Low num of reviews', 'Suspicious seller'],
+                visceralCues: ['Low price'],
+                title: 'Handheld Vacuum #2',
+                images: [
+                    IMAGE_BASE + 'vacuum/listing2/1.jpg',
+                    IMAGE_BASE + 'vacuum/listing2/2.jpg',
+                    IMAGE_BASE + 'vacuum/listing2/3.jpg'
+                ],
+                price: 18.00,
+                originalPrice: 39.99,
+                discount: 77,
+                rating: 4.7,
+                reviews: 5,
+                sellerName: 'VacuumDeals',
+                sellerPositive: 63,
+                sellerFollowers: 456,
+                sellerRating: 2.8,
+                reviewTexts: [
+                    { name: 'dm_dg', stars: 1, text: '' },
+                    { name: 'pet-e', stars: 5, text: 'Works well! Finally got to clean my car seats.' },
+                    { name: 'de_35d9d', stars: 2, text: 'Turns on but weak suction.' }
+                ]
+            }, {
+                id: 3,
+                type: 'scam',
+                scamCues: ['Suspicious seller'],
+                visceralCues: ['Low stock', 'Low price'],
+                title: 'Handheld Vacuum #3',
+                images: [
+                    IMAGE_BASE + 'vacuum/listing3/1.jpg',
+                    IMAGE_BASE + 'vacuum/listing3/2.jpg',
+                    IMAGE_BASE + 'vacuum/listing3/3.jpg'
+                ],
+                price: 20.00,
+                originalPrice: 45.99,
+                discount: 75,
+                rating: 4.6,
+                reviews: 1013,
+                sellerName: 'HomeClean',
+                sellerPositive: 37,
+                sellerFollowers: 79,
+                sellerRating: 3.3,
+                reviewTexts: [
+                    { name: 'd.w_31', stars: 5, text: '' },
+                    { name: 'k_jy', stars: 4, text: '' },
+                    { name: 'janet_63', stars: 5, text: '' }
+                ]
+            }, {
+                id: 4,
+                type: 'scam',
+                scamCues: ['Mismatches across images'],
+                visceralCues: ['Flash sale'],
+                title: 'Handheld Vacuum #4',
+                images: [
+                    IMAGE_BASE + 'vacuum/listing4/1.jpg',
+                    IMAGE_BASE + 'vacuum/listing4/2.jpg',
+                    IMAGE_BASE + 'vacuum/listing4/3.jpg'
+                ],
+                price: 25.00,
+                originalPrice: 59.99,
+                discount: 71,
+                rating: 4.3,
+                reviews: 589,
+                sellerName: 'QuickClean',
+                sellerPositive: 74,
+                sellerFollowers: 934,
+                sellerRating: 4.5,
+                reviewTexts: [
+                    { name: '9v0_2k', stars: 5, text: '' },
+                    { name: 'adam_f', stars: 5, text: '' },
+                    { name: 'rachel_b', stars: 5, text: '' }
+                ]
+            }, {
+                id: 5,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: ['Low stock'],
+                title: 'Handheld Vacuum #5',
+                images: [
+                    IMAGE_BASE + 'vacuum/listing5/1.jpg',
+                    IMAGE_BASE + 'vacuum/listing5/2.jpg',
+                    IMAGE_BASE + 'vacuum/listing5/3.jpg'
+                ],
+                price: 25.00,
+                originalPrice: 59.99,
+                discount: 50,
+                rating: 4.5,
+                reviews: 194,
+                sellerName: 'PowerVac',
+                sellerPositive: 97,
+                sellerFollowers: 8456,
+                sellerRating: 4.8,
+                reviewTexts: [
+                    { name: 'cns_nds', stars: 5, text: 'Amazing vacuum! Powerful suction for such a small device.' },
+                    { name: 'cool_dad', stars: 4, text: 'Works great. Only wish the battery lasted a bit longer.' },
+                    { name: 'lola_45', stars: 5, text: 'This thing is a beast. Picked up pet hair like it was nothing!' }
+                ]
+            }, {
+                id: 6,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: ['Flash sale', 'Low stock'],
+                title: 'Handheld Vacuum #6',
+                images: [
+                    IMAGE_BASE + 'vacuum/listing6/1.jpg',
+                    IMAGE_BASE + 'vacuum/listing6/2.jpg',
+                    IMAGE_BASE + 'vacuum/listing6/3.jpg'
+                ],
+                price: 15.00,
+                originalPrice: 35.50,
+                discount: 44,
+                rating: 4.5,
+                reviews: 1023,
+                sellerName: 'CleanTech',
+                sellerPositive: 95,
+                sellerFollowers: 7234,
+                sellerRating: 4.6,
+                reviewTexts: [
+                    { name: 'owne_r', stars: 4, text: 'good' },
+                    { name: 'hannah_m', stars: 4, text: 'This little vacuum is powerful!' },
+                    { name: 'llams', stars: 5, text: 'If I could give it 6 stars, I would. Perfect for cleaning my car.' }
+                ]
+            }, {
+                id: 7,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: ['Low price'],
+                title: 'Handheld Vacuum #7',
+                images: [
+                    IMAGE_BASE + 'vacuum/listing7/1.jpg',
+                    IMAGE_BASE + 'vacuum/listing7/2.jpg',
+                    IMAGE_BASE + 'vacuum/listing7/3.jpg'
+                ],
+                price: 18.00,
+                originalPrice: 40.59,
+                discount: 37,
+                rating: 4.6,
+                reviews: 892,
+                sellerName: 'HomeGadgets',
+                sellerPositive: 93,
+                sellerFollowers: 6123,
+                sellerRating: 4.4,
+                reviewTexts: [
+                    { name: 'diy_mom', stars: 5, text: 'Reliable and easy to use. Gets the job done.' },
+                    { name: 'gadget_guy', stars: 3, text: 'decent suction' },
+                    { name: 'peaches_30', stars: 4, text: 'Good quality for the price.' }
+                ]
+            }, {
+                id: 8,
+                type: 'non-scam',
+                scamCues: [],
+                visceralCues: [],
+                title: 'Handheld Vacuum #8',
+                images: [
+                    IMAGE_BASE + 'vacuum/listing8/1.jpg',
+                    IMAGE_BASE + 'vacuum/listing8/2.jpg',
+                    IMAGE_BASE + 'vacuum/listing8/3.jpg'
+                ],
+                price: 20.00,
+                originalPrice: 44.99,
+                discount: 46,
+                rating: 4.5,
+                reviews: 1456,
+                sellerName: 'ProClean',
+                sellerPositive: 98,
+                sellerFollowers: 9012,
+                sellerRating: 4.9,
+                reviewTexts: [
+                    { name: 'jane_c', stars: 5, text: 'Small but mighty. I use it for everything.' },
+                    { name: 'f4x4_g', stars: 3, text: 'pretty okay, not the best vacuum but gets the job done' },
+                    { name: 'pets_lover', stars: 4, text: 'Picks up hair easily. Super lightweight and comfy to use. Battery life is too short.' }
+                ]
+            }]
+        }];
+
+        // Calculate discounts for all listings
+        const processedProducts = rawProducts.map(product => {
+            const processedListings = product.listings.map(listing => {
+                const discount = Math.round(((listing.originalPrice - listing.price) / listing.originalPrice) * 100);
+                return { ...listing, discount };
+            });
+            return { ...product, listings: processedListings };
+        });
+
+        // Apply the circular-shift randomization per product
+        let products = processedProducts.map(product => {
+            const { listings, offset } = createRandomizedListings(product.listings, product.id);
+            return {
+                ...product,
+                listings: listings,
+                _randomizationOffset: offset
+            };
+        });
+
+        // Store offsets for data analysis
+        const randomizationOffsets = {};
+        products.forEach(p => {
+            randomizationOffsets[p.id] = p._randomizationOffset;
+        });
+        console.log('🎲 Randomization offsets per product:', randomizationOffsets);
+
+        // ================================================================
+        // 2. DOM REFERENCES
+        // ================================================================
+
+        const $ = id => document.getElementById(id);
+
+        const productNameDisplay = $('productNameDisplay');
+        const currentProductNum = $('currentProductNum');
+        const progressFill = $('progressFill');
+
+        const listingGridPage = $('listingGridPage');
+        const productDetailPage = $('productDetailPage');
+        const listingGridCards = $('listingGridCards');
+        const backToListingBtn = $('backToListingBtn');
+        const progressSection = $('progressSection');
+        const navSection = $('navSection');
+
+        const carouselTrack = $('carouselTrack');
+        const slides = carouselTrack.querySelectorAll('.carousel-slide');
+        const prevBtn = $('prevBtn');
+        const nextBtn = $('nextBtn');
+        const dotsContainer = $('dotsContainer');
+
+        const carouselImage1 = $('carouselImage1');
+        const carouselImage2 = $('carouselImage2');
+        const carouselImage3 = $('carouselImage3');
+
+        const priceCurrent = $('priceCurrent');
+        const priceOriginal = $('priceOriginal');
+        const priceDiscount = $('priceDiscount');
+        const priceSavings = $('priceSavings');
+
+        const productTitle = $('productTitle');
+        const productSubtitle = $('productSubtitle');
+
+        const productStars = $('productStars');
+        const ratingScore = $('ratingScore');
+        const reviewCount = $('reviewCount');
+
+        const visceralCuesContainer = $('visceralCuesContainer');
+
+        const reviewText1 = $('reviewText1');
+        const reviewText2 = $('reviewText2');
+        const reviewText3 = $('reviewText3');
+
+        const sellerIcon = $('sellerIcon');
+        const sellerName = $('sellerName');
+        const sellerFollowers = $('sellerFollowers');
+        const sellerStars = $('sellerStars');
+        const sellerScore = $('sellerScore');
+        const sellerReviewCount = $('sellerReviewCount');
+
+        const addToCartBtn = $('addToCartBtn');
+        const prevProductBtn = $('prevProductBtn');
+        const nextProductBtn = $('nextProductBtn');
+        const statusMsg = $('status-msg');
+        const dataLog = $('data-log');
+
+        const popupOverlay = $('popupOverlay');
+        const popupMessage = $('popupMessage');
+        const popupConfirm = $('popupConfirm');
+        const popupCancel = $('popupCancel');
+
+        const viewCartBtn = $('viewCartBtn');
+        const temuHeaderIcons = document.querySelector('.emu-header-icons');
+        const cartPage = $('cartPage');
+        const cartItemsContainer = $('cartItemsContainer');
+        const backToShopBtn = $('backToShopBtn');
+
+        const completionPage = $('completionPage');
+
+        // ================================================================
+        // 3. STATE MANAGEMENT
+        // ================================================================
+
+        let currentProductIndex = 0;
+        let currentListingIndex = 0;
+        let carouselIndex = 0;
+        let isOnDetailPage = false;
+        let isOnCartPage = false;
+        let isCompleted = false;
+
+        let cartItems = {};
+        let productCompleted = {};
+        let pendingListingIndex = null;
+
+        let capturedData = {
+            participant_id: null,
+            product_selections: [],
+            carousel_interactions: {},
+            cart_actions: [],
+            randomization_offsets: randomizationOffsets,
+            timestamp: new Date().toISOString()
+        };
+
+        const totalSlides = 3;
+
+        // ================================================================
+        // 4. PAGE NAVIGATION
+        // ================================================================
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 100);
+        }
+
+        function updateProgressBar() {
+            const product = products[currentProductIndex];
+            const listing = product.listings[currentListingIndex];
+            
+            productNameDisplay.textContent = product.name;
+            currentProductNum.textContent = currentProductIndex + 1;
+            progressFill.style.width = `${((currentProductIndex) / 3) * 100}%`;
+        }
+
+        function showListingGrid() {
+            if (isCompleted) return;
+            isOnDetailPage = false;
+            isOnCartPage = false;
+            listingGridPage.style.display = 'block';
+            productDetailPage.classList.remove('active');
+            productDetailPage.style.display = 'none';
+            cartPage.classList.remove('active');
+            cartPage.style.display = 'none';
+            completionPage.classList.remove('active');
+            completionPage.style.display = 'none';
+            progressSection.style.display = 'block';
+            navSection.style.display = 'flex';
+            temuHeaderIcons.style.display = 'flex';
+            updateProgressBar();
+            renderListingGridCards();
+            scrollToTop();
+            
+            const product = products[currentProductIndex];
+            showStatus(`Viewing listings for ${product.name}`);
+        }
+
+        function showProductDetail(listingIndex) {
+            if (isCompleted) return;
+            isOnDetailPage = true;
+            isOnCartPage = false;
+            currentListingIndex = listingIndex;
+            listingGridPage.style.display = 'none';
+            productDetailPage.style.display = 'block';
+            productDetailPage.classList.add('active');
+            cartPage.classList.remove('active');
+            cartPage.style.display = 'none';
+            completionPage.classList.remove('active');
+            completionPage.style.display = 'none';
+            progressSection.style.display = 'block';
+            navSection.style.display = 'flex';
+            temuHeaderIcons.style.display = 'flex';
+            updateProgressBar();
+            renderProductDetail();
+            goToSlide(0);
+            scrollToTop();
+            updateCartButton();
+            
+            const product = products[currentProductIndex];
+            const listing = product.listings[currentListingIndex];
+            const displayNumber = currentListingIndex + 1;
+            const displayTitle = `${product.name} #${displayNumber}`;
+            showStatus(`Viewing ${displayTitle}`);
+        }
+
+        function showCartPage() {
+            if (isCompleted) return;
+            isOnCartPage = true;
+            isOnDetailPage = false;
+            listingGridPage.style.display = 'none';
+            productDetailPage.classList.remove('active');
+            productDetailPage.style.display = 'none';
+            cartPage.style.display = 'block';
+            cartPage.classList.add('active');
+            completionPage.classList.remove('active');
+            completionPage.style.display = 'none';
+            progressSection.style.display = 'none';
+            navSection.style.display = 'none';
+            temuHeaderIcons.style.display = 'none';
+            renderCartItems();
+            scrollToTop();
+        }
+
+        function showCompletionPage() {
+            isCompleted = true;
+            isOnCartPage = false;
+            isOnDetailPage = false;
+            listingGridPage.style.display = 'none';
+            productDetailPage.classList.remove('active');
+            productDetailPage.style.display = 'none';
+            cartPage.classList.remove('active');
+            cartPage.style.display = 'none';
+            completionPage.style.display = 'block';
+            completionPage.classList.add('active');
+            progressSection.style.display = 'none';
+            navSection.style.display = 'none';
+            temuHeaderIcons.style.display = 'none';
+            scrollToTop();
+        }
+
+        // ================================================================
+        // 5. LISTING GRID CARDS - WITH COLORFUL VISCERAL CUES
+        // ================================================================
+
+        function renderListingGridCards() {
+            const product = products[currentProductIndex];
+            const productId = product.id;
+            listingGridCards.innerHTML = '';
+            
+            // NOTE: We no longer sort by _originalIndex.
+            // The listings array is already in the randomized display order
+            // (from createRandomizedListings). Display position determines the
+            // "#N" label. The true identity is preserved in `listing.id` and
+            // `listing._originalIndex` for data analysis.
+            
+            product.listings.forEach((listing, index) => {
+                const card = document.createElement('div');
+                card.className = 'listing-card';
+                
+                const firstImage = listing.images && listing.images.length > 0 ? listing.images[0] : '';
+                
+                // ================================================================
+                // CARD STARS - Gradient Fill Support
+                // ================================================================
+                const rating = listing.reviews === 0 ? 0 : listing.rating;
+                const percentage = (rating / 5) * 100;
+
+                const starsHTML = `
+                    <span style="position:relative;display:inline-block;font-size:0.7rem;letter-spacing:1px;color:#ddd;">
+                        <span>★★★★★</span>
+                        <span style="position:absolute;top:0;left:0;color:#ffb400;overflow:hidden;white-space:nowrap;width:${percentage}%;">★★★★★</span>
+                    </span>
+                `;
+                
+                // ================================================================
+                // CARD VISCERAL CUES - Colorful tags
+                // ================================================================
+                let visceralCuesHTML = '';
+                if (listing.visceralCues && listing.visceralCues.length > 0) {
+                    const cueSpans = listing.visceralCues
+                        .filter(cue => cue && cue.trim() !== '')
+                        .map(cue => {
+                            const formatted = formatVisceralCue(cue, listing);
+                            return `<span class="card-visceral-cue ${formatted.cssClass}">${formatted.text}</span>`;
+                        }).join('');
+                    if (cueSpans) {
+                        visceralCuesHTML = `<div class="card-visceral-cues">${cueSpans}</div>`;
+                    }
+                }
+                
+                // Display label is based on POSITION in the randomized order (1-8)
+                const displayNumber = index + 1;
+                const displayTitle = `${product.name} #${displayNumber}`;
+                
+                const actualIndex = product.listings.indexOf(listing);
+                const isInCart = cartItems[productId] === actualIndex;
+                
+                const priceHTML = `
+                    <div class="card-price-wrapper" style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
+                        <span class="card-price" style="font-size:1.1rem;font-weight:700;color:#e43d2c;">$${listing.price.toFixed(2)}</span>
+                        <span class="card-original-price" style="font-size:0.75rem;color:#999;text-decoration:line-through;">$${listing.originalPrice.toFixed(2)}</span>
+                        <span class="card-discount-badge" style="font-size:0.6rem;color:#e43d2c;font-weight:600;">-${listing.discount}%</span>
+                    </div>
+                `;
+                
+                card.innerHTML = `
+                    <img class="card-image" src="${firstImage}" alt="${displayTitle}" onerror="this.src='https://via.placeholder.com/400x300/e0e0e0/999999?text=No+Image'" />
+                    <div class="card-title">${displayTitle}</div>
+                    ${priceHTML}
+                    <div class="card-rating">
+                        ${starsHTML}
+                        <span class="count">(${listing.reviews.toLocaleString()})</span>
+                    </div>
+                    ${visceralCuesHTML}
+                    ${isInCart ? '<div style="font-size:0.6rem;color:#2e7d32;margin-top:4px;font-weight:600;">✓ In Cart</div>' : ''}
+                `;
+                
+                card.addEventListener('click', () => {
+                    const actualIdx = product.listings.indexOf(listing);
+                    logData('listing_selected', {
+                        productId: product.id,
+                        listingId: listing.id,
+                        listingType: listing.type,
+                        scamCues: listing.scamCues.length,
+                        visceralCues: listing.visceralCues.length,
+                        originalIndex: listing._originalIndex,
+                        displayNumber: displayNumber,
+                        randomizationOffset: product._randomizationOffset
+                    });
+                    showProductDetail(actualIdx);
+                    showStatus(`Viewing ${displayTitle}`);
+                });
+                
+                listingGridCards.appendChild(card);
+            });
+        }
+
+        // ================================================================
+        // 6. CAROUSEL LOGIC
+        // ================================================================
+
+        function initDots() {
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('span');
+                if (i === 0) dot.classList.add('active');
+                dot.dataset.index = i;
+                dot.addEventListener('click', () => goToSlide(i));
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function goToSlide(index) {
+            carouselIndex = (index + totalSlides) % totalSlides;
+            carouselTrack.style.transform = `translateX(-${carouselIndex * 100}%)`;
+            document.querySelectorAll('.carousel-dots span').forEach((d, i) => {
+                d.classList.toggle('active', i === carouselIndex);
+            });
+            if (isOnDetailPage) {
+                const productId = products[currentProductIndex].id;
+                if (!capturedData.carousel_interactions[productId]) {
+                    capturedData.carousel_interactions[productId] = 0;
+                }
+                capturedData.carousel_interactions[productId]++;
+                logData('carousel_interactions', capturedData.carousel_interactions);
+            }
+        }
+
+        prevBtn.addEventListener('click', () => goToSlide(carouselIndex - 1));
+        nextBtn.addEventListener('click', () => goToSlide(carouselIndex + 1));
+
+        // ================================================================
+        // 7. RENDER PRODUCT DETAIL
+        // ================================================================
+
+        function renderProductDetail() {
+            const product = products[currentProductIndex];
+            const listing = product.listings[currentListingIndex];
+
+            // Display label is based on POSITION in the randomized order
+            const displayNumber = currentListingIndex + 1;
+            const displayTitle = `${product.name} #${displayNumber}`;
+
+            if (listing.images && listing.images.length >= 3) {
+                carouselImage1.src = listing.images[0];
+                carouselImage2.src = listing.images[1];
+                carouselImage3.src = listing.images[2];
+                carouselImage1.alt = `${displayTitle} - Image 1`;
+                carouselImage2.alt = `${displayTitle} - Image 2`;
+                carouselImage3.alt = `${displayTitle} - Image 3`;
+            } else {
+                const colors = ['e43d2c', 'ff6b35', 'ffd700'];
+                const productName = encodeURIComponent(displayTitle);
+                carouselImage1.src = `https://via.placeholder.com/400x300/${colors[0]}/ffffff?text=${productName}+1`;
+                carouselImage2.src = `https://via.placeholder.com/400x300/${colors[1]}/ffffff?text=${productName}+2`;
+                carouselImage3.src = `https://via.placeholder.com/400x300/${colors[2]}/222222?text=${productName}+3`;
+                carouselImage1.alt = `${displayTitle} - Image 1`;
+                carouselImage2.alt = `${displayTitle} - Image 2`;
+                carouselImage3.alt = `${displayTitle} - Image 3`;
+            }
+
+            const priceStr = listing.price.toFixed(2);
+            const priceParts = priceStr.split('.');
+            priceCurrent.innerHTML = `<small>$</small>${priceParts[0]}.<small>${priceParts[1]}</small>`;
+            priceOriginal.textContent = `$${listing.originalPrice.toFixed(2)}`;
+            priceDiscount.textContent = `-${listing.discount}%`;
+            const savings = (listing.originalPrice - listing.price).toFixed(2);
+            priceSavings.textContent = `🔥 Flash sale · You save $${savings}`;
+
+            productTitle.textContent = displayTitle;
+            productSubtitle.textContent = product.subtitle;
+
+            // ================================================================
+            // PRODUCT STARS - If 0 reviews, show 0 stars
+            // ================================================================
+            const rating = listing.reviews === 0 ? 0 : listing.rating;
+            const percentage = (rating / 5) * 100;
+            
+            productStars.innerHTML = '';
+            productStars.style.position = 'relative';
+            productStars.style.display = 'inline-block';
+            productStars.style.fontSize = '1.2rem';
+            productStars.style.letterSpacing = '2px';
+            
+            const emptyStars = document.createElement('span');
+            emptyStars.className = 'star-empty';
+            emptyStars.textContent = '★★★★★';
+            
+            const filledStars = document.createElement('span');
+            filledStars.className = 'star-fill';
+            filledStars.style.width = `${percentage}%`;
+            filledStars.textContent = '★★★★★';
+            
+            productStars.appendChild(emptyStars);
+            productStars.appendChild(filledStars);
+            
+            ratingScore.textContent = listing.reviews === 0 ? '0.0' : listing.rating.toFixed(1);
+            reviewCount.textContent = listing.reviews.toLocaleString();
+
+            // ================================================================
+            // VISCERAL CUES - Colorful tags on detail page
+            // ================================================================
+            visceralCuesContainer.innerHTML = '';
+            
+            if (listing.visceralCues && listing.visceralCues.length > 0) {
+                listing.visceralCues.forEach(cue => {
+                    if (!cue || cue.trim() === '') return;
+                    const span = document.createElement('span');
+                    const formatted = formatVisceralCue(cue, listing);
+                    span.className = `visceral-cue ${formatted.cssClass}`;
+                    span.textContent = formatted.text;
+                    visceralCuesContainer.appendChild(span);
+                });
+            }
+
+            // ================================================================
+            // REVIEWS - Full Customization Support
+            // ================================================================
+            
+            const defaultReviews = [
+                { name: 'Jessica D.', stars: 5, text: 'Great quality for the price!' },
+                { name: 'Mike R.', stars: 4, text: 'Good product, shipping was fast.' },
+                { name: 'Sarah L.', stars: 5, text: 'Highly recommend this seller!' }
+            ];
+            
+            const reviewData = listing.reviewTexts || defaultReviews;
+            const reviewItems = document.querySelectorAll('.review-item');
+            
+            reviewItems.forEach((item, index) => {
+                if (reviewData[index]) {
+                    const data = reviewData[index];
+                    
+                    const avatar = item.querySelector('.review-avatar');
+                    const name = item.querySelector('.review-name');
+                    const stars = item.querySelector('.review-stars');
+                    const text = item.querySelector('.review-text');
+                    
+                    const initials = data.name.split(' ').map(n => n[0]).join('');
+                    
+                    if (avatar) avatar.textContent = initials;
+                    if (name) name.textContent = data.name;
+                    
+                    if (stars) {
+                        const filledStars = '★'.repeat(data.stars);
+                        const emptyStars = '☆'.repeat(5 - data.stars);
+                        stars.textContent = filledStars + emptyStars;
+                    }
+                    
+                    if (text) {
+                        text.textContent = data.text ? `"${data.text}"` : '';
+                    }
+                    
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            const sellerInitials = listing.sellerName.split(' ').map(w => w[0]).join('').substring(0, 2);
+            sellerIcon.textContent = sellerInitials;
+            sellerName.textContent = listing.sellerName;
+            sellerFollowers.textContent = (listing.sellerFollowers / 1000).toFixed(1) + 'K';
+
+            const sellerFullStars = Math.floor(listing.sellerRating);
+            let sellerStarsHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                sellerStarsHTML += i <= sellerFullStars ? '★' : '☆';
+            }
+            sellerStars.textContent = sellerStarsHTML;
+            sellerScore.textContent = listing.sellerRating.toFixed(1);
+            sellerReviewCount.textContent = `(${(listing.sellerFollowers * 0.2).toFixed(0).toLocaleString()} reviews)`;
+        }
+
+        // ================================================================
+        // 8. CART BUTTON LOGIC
+        // ================================================================
+
+        function updateCartButton() {
+            const productId = products[currentProductIndex].id;
+            const currentIndex = currentListingIndex;
+            const cartIndex = cartItems[productId];
+            
+            if (cartIndex === currentIndex) {
+                addToCartBtn.innerHTML = '🗑️ Remove from Cart';
+                addToCartBtn.classList.add('in-cart');
+            } else {
+                addToCartBtn.innerHTML = '🛒 Add to Cart';
+                addToCartBtn.classList.remove('in-cart');
+            }
+            checkAndUpdateNextButton();
+        }
+
+        function checkAndUpdateNextButton() {
+            const productId = products[currentProductIndex].id;
+            const hasCartItem = cartItems[productId] !== null && cartItems[productId] !== undefined;
+            const isLastProduct = currentProductIndex === products.length - 1;
+            
+            if (hasCartItem || productCompleted[productId]) {
+                nextProductBtn.disabled = false;
+                nextProductBtn.classList.remove('locked');
+                
+                if (isLastProduct) {
+                    nextProductBtn.textContent = '🛒 Review Cart';
+                } else {
+                    nextProductBtn.textContent = 'Next Product →';
+                }
+                nextProductBtn.style.background = '#e43d2c';
+            } else {
+                nextProductBtn.disabled = true;
+                nextProductBtn.classList.add('locked');
+                nextProductBtn.textContent = '🔒 Add to Cart First';
+                nextProductBtn.style.background = '#ff9800';
+            }
+        }
+
+        function addToCart(listingIndex) {
+            const productId = products[currentProductIndex].id;
+            const product = products[currentProductIndex];
+            const listing = product.listings[listingIndex];
+            
+            if (cartItems[productId] !== null && cartItems[productId] !== undefined && cartItems[productId] !== listingIndex) {
+                pendingListingIndex = listingIndex;
+                popupMessage.textContent = `Adding this item to cart will remove your previous selection.`;
+                popupOverlay.classList.add('active');
+                return;
+            }
+            
+            if (cartItems[productId] === listingIndex) {
+                removeFromCart(listingIndex);
+                return;
+            }
+            
+            performAddToCart(listingIndex);
+        }
+
+        function performAddToCart(listingIndex) {
+            const productId = products[currentProductIndex].id;
+            const product = products[currentProductIndex];
+            const listing = product.listings[listingIndex];
+            
+            cartItems[productId] = listingIndex;
+            logData('cart_action', {
+                productId: productId,
+                listingId: listing.id,
+                listingIndex: listingIndex,
+                displayNumber: listingIndex + 1,
+                originalIndex: listing._originalIndex,
+                action: 'added',
+                timestamp: new Date().toISOString()
+            });
+            
+            showStatus(`✅ Added ${product.name} to cart!`);
+            updateCartButton();
+            renderListingGridCards();
+        }
+
+        function removeFromCart(listingIndex) {
+            const productId = products[currentProductIndex].id;
+            const product = products[currentProductIndex];
+            const listing = product.listings[listingIndex];
+            
+            cartItems[productId] = null;
+            logData('cart_action', {
+                productId: productId,
+                listingId: listing.id,
+                listingIndex: listingIndex,
+                displayNumber: listingIndex + 1,
+                originalIndex: listing._originalIndex,
+                action: 'removed',
+                timestamp: new Date().toISOString()
+            });
+            
+            showStatus(`🗑️ Removed ${product.name} from cart`);
+            updateCartButton();
+            renderListingGridCards();
+        }
+
+        // ================================================================
+        // 9. POPUP HANDLING
+        // ================================================================
+
+        popupConfirm.addEventListener('click', function() {
+            const productId = products[currentProductIndex].id;
+            const previousIndex = cartItems[productId];
+            if (previousIndex !== null && previousIndex !== undefined) {
+                const product = products[currentProductIndex];
+                const previousListing = product.listings[previousIndex];
+                logData('cart_action', {
+                    productId: productId,
+                    listingId: previousListing.id,
+                    listingIndex: previousIndex,
+                    displayNumber: previousIndex + 1,
+                    originalIndex: previousListing._originalIndex,
+                    action: 'replaced_removed',
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            cartItems[productId] = pendingListingIndex;
+            const product = products[currentProductIndex];
+            const newListing = product.listings[pendingListingIndex];
+            logData('cart_action', {
+                productId: productId,
+                listingId: newListing.id,
+                listingIndex: pendingListingIndex,
+                displayNumber: pendingListingIndex + 1,
+                originalIndex: newListing._originalIndex,
+                action: 'replaced_added',
+                timestamp: new Date().toISOString()
+            });
+            
+            showStatus(`✅ Updated cart!`);
+            popupOverlay.classList.remove('active');
+            pendingListingIndex = null;
+            updateCartButton();
+            renderListingGridCards();
+        });
+
+        popupCancel.addEventListener('click', function() {
+            popupOverlay.classList.remove('active');
+            pendingListingIndex = null;
+            showStatus('Selection unchanged', false);
+        });
+
+        popupOverlay.addEventListener('click', function(e) {
+            if (e.target === this) {
+                popupOverlay.classList.remove('active');
+                pendingListingIndex = null;
+                showStatus('Selection unchanged', false);
+            }
+        });
+
+        // ================================================================
+        // 10. VIEW CART PAGE
+        // ================================================================
+
+        function renderCartItems() {
+            cartItemsContainer.innerHTML = '';
+            
+            const hasItems = Object.values(cartItems).some(item => item !== null && item !== undefined);
+            
+            if (!hasItems) {
+                cartItemsContainer.innerHTML = `
+                    <div class="cart-empty">
+                        <div class="empty-icon">🛒</div>
+                        <h3>Your cart is empty</h3>
+                        <p style="color:#888;font-size:0.85rem;">Go back to shopping to add items.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let itemsHTML = '';
+            let totalItems = 0;
+            let totalPrice = 0;
+            let allProductsHaveItems = true;
+            
+            products.forEach((product, productIndex) => {
+                const cartIndex = cartItems[product.id];
+                const isCompleted = productCompleted[product.id];
+                
+                if (cartIndex !== null && cartIndex !== undefined) {
+                    const listing = product.listings[cartIndex];
+                    const firstImage = listing.images && listing.images.length > 0 ? listing.images[0] : '';
+                    
+                    // Display label uses the position in the randomized order
+                    const displayNumber = cartIndex + 1;
+                    const displayTitle = `${product.name} #${displayNumber}`;
+                    
+                    totalItems++;
+                    totalPrice += listing.price;
+                    
+                    itemsHTML += `
+                        <div class="cart-item" data-product-id="${product.id}" data-listing-index="${cartIndex}">
+                            <img class="item-image" src="${firstImage}" alt="${displayTitle}" onerror="this.src='https://via.placeholder.com/60x60/e0e0e0/999999?text=No+Image'" />
+                            <div class="item-info">
+                                <div class="item-name">${displayTitle}</div>
+                                <div class="item-status">${isCompleted ? '✅ Completed' : '🔄 In progress'}</div>
+                            </div>
+                            <div class="item-price">$${listing.price.toFixed(2)}</div>
+                        </div>
+                    `;
+                } else {
+                    allProductsHaveItems = false;
+                }
+            });
+            
+            cartItemsContainer.innerHTML = `
+                ${itemsHTML}
+                <div class="cart-footer">
+                    <div style="font-size:0.9rem;font-weight:600;margin-bottom:12px;">
+                        Total: <span style="color:#e43d2c;">$${totalPrice.toFixed(2)}</span> (${totalItems} item${totalItems > 1 ? 's' : ''})
+                    </div>
+                    <button class="complete-btn" id="completeShoppingBtn" ${!allProductsHaveItems ? 'disabled' : ''}>
+                        ${allProductsHaveItems ? '✅ Complete Shopping' : '⚠️ Add items for all products first'}
+                    </button>
+                    ${!allProductsHaveItems ? '<div style="font-size:0.7rem;color:#888;margin-top:6px;">You need to add one item for each product before completing.</div>' : ''}
+                </div>
+            `;
+            
+            document.querySelectorAll('.cart-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const productId = parseInt(this.dataset.productId);
+                    const listingIndex = parseInt(this.dataset.listingIndex);
+                    const productIndex = products.findIndex(p => p.id === productId);
+                    if (productIndex !== -1) {
+                        currentProductIndex = productIndex;
+                        currentListingIndex = listingIndex;
+                        showProductDetail(listingIndex);
+                        updateNavButtons();
+                        checkAndUpdateNextButton();
+                    }
+                });
+            });
+            
+            const completeBtn = document.getElementById('completeShoppingBtn');
+            if (completeBtn) {
+                completeBtn.addEventListener('click', function() {
+                    if (!this.disabled) {
+                        submitFinalData();
+                    }
+                });
+            }
+        }
+
+        // ================================================================
+        // 11. DATA CAPTURE
+        // ================================================================
+
+        function logData(key, value) {
+            if (key === 'listing_selected') {
+                const existing = capturedData.product_selections.find(
+                    p => p.productId === value.productId
+                );
+                if (existing) {
+                    existing.listingId = value.listingId;
+                    existing.listingType = value.listingType;
+                    existing.scamCues = value.scamCues;
+                    existing.visceralCues = value.visceralCues;
+                    existing.originalIndex = value.originalIndex;
+                    existing.displayNumber = value.displayNumber;
+                    existing.randomizationOffset = value.randomizationOffset;
+                    existing.updatedAt = new Date().toISOString();
+                } else {
+                    capturedData.product_selections.push({
+                        productId: value.productId,
+                        listingId: value.listingId,
+                        listingType: value.listingType,
+                        scamCues: value.scamCues,
+                        visceralCues: value.visceralCues,
+                        originalIndex: value.originalIndex,
+                        displayNumber: value.displayNumber,
+                        randomizationOffset: value.randomizationOffset,
+                        selectedAt: new Date().toISOString()
+                    });
+                }
+            } else if (key === 'cart_action') {
+                capturedData.cart_actions.push(value);
+            } else if (key === 'carousel_interactions') {
+                capturedData.carousel_interactions = value;
+            }
+
+            dataLog.textContent = JSON.stringify(capturedData);
+            console.log('📊 Data captured:', capturedData);
+        }
+
+        function showStatus(msg, isError = false) {
+            statusMsg.textContent = msg;
+            statusMsg.style.color = isError ? '#c62828' : '#2e7d32';
+            setTimeout(() => {
+                if (!isError) statusMsg.textContent = '';
+            }, 3000);
+        }
+
+        // ================================================================
+        // 12. BUTTON INTERACTIONS
+        // ================================================================
+
+        backToListingBtn.addEventListener('click', () => {
+            showListingGrid();
+            showStatus('Back to listings');
+        });
+
+        viewCartBtn.addEventListener('click', () => {
+            showCartPage();
+            showStatus('Viewing your cart');
+        });
+
+        backToShopBtn.addEventListener('click', () => {
+            showListingGrid();
+            showStatus('Back to shopping');
+        });
+
+        addToCartBtn.addEventListener('click', function() {
+            const productId = products[currentProductIndex].id;
+            const currentIndex = currentListingIndex;
+            
+            if (cartItems[productId] === currentIndex) {
+                removeFromCart(currentIndex);
+            } else {
+                addToCart(currentIndex);
+            }
+        });
+
+        // ================================================================
+        // 13. PRODUCT NAVIGATION
+        // ================================================================
+
+        prevProductBtn.addEventListener('click', function() {
+            if (currentProductIndex > 0) {
+                if (isOnDetailPage) {
+                    const product = products[currentProductIndex];
+                    const listing = product.listings[currentListingIndex];
+                    logData('listing_selected', {
+                        productId: product.id,
+                        listingId: listing.id,
+                        listingType: listing.type,
+                        scamCues: listing.scamCues.length,
+                        visceralCues: listing.visceralCues.length,
+                        originalIndex: listing._originalIndex,
+                        displayNumber: currentListingIndex + 1,
+                        randomizationOffset: product._randomizationOffset
+                    });
+                }
+
+                currentProductIndex--;
+                currentListingIndex = 0;
+                showListingGrid();
+                updateNavButtons();
+                checkAndUpdateNextButton();
+            }
+        });
+
+        nextProductBtn.addEventListener('click', function() {
+            const productId = products[currentProductIndex].id;
+            
+            if (cartItems[productId] === null || cartItems[productId] === undefined) {
+                showStatus('⚠️ Please add a listing to your cart before proceeding!', true);
+                return;
+            }
+
+            productCompleted[productId] = true;
+
+            if (currentProductIndex < 2) {
+                if (isOnDetailPage) {
+                    const product = products[currentProductIndex];
+                    const listing = product.listings[currentListingIndex];
+                    logData('listing_selected', {
+                        productId: product.id,
+                        listingId: listing.id,
+                        listingType: listing.type,
+                        scamCues: listing.scamCues.length,
+                        visceralCues: listing.visceralCues.length,
+                        originalIndex: listing._originalIndex,
+                        displayNumber: currentListingIndex + 1,
+                        randomizationOffset: product._randomizationOffset
+                    });
+                }
+
+                currentProductIndex++;
+                currentListingIndex = 0;
+                showListingGrid();
+                updateNavButtons();
+                checkAndUpdateNextButton();
+            } else {
+                showCartPage();
+                showStatus('All products added to cart! Review your selections.');
+            }
+        });
+
+        function updateNavButtons() {
+            prevProductBtn.disabled = currentProductIndex === 0;
+            prevProductBtn.style.opacity = currentProductIndex === 0 ? '0.5' : '1';
+        }
+
+        // ================================================================
+        // 14. FINAL SUBMIT
+        // ================================================================
+
+        function submitFinalData() {
+            if (isOnDetailPage) {
+                const product = products[currentProductIndex];
+                const listing = product.listings[currentListingIndex];
+                logData('listing_selected', {
+                    productId: product.id,
+                    listingId: listing.id,
+                    listingType: listing.type,
+                    scamCues: listing.scamCues.length,
+                    visceralCues: listing.visceralCues.length,
+                    originalIndex: listing._originalIndex,
+                    displayNumber: currentListingIndex + 1,
+                    randomizationOffset: product._randomizationOffset
+                });
+            }
+
+            capturedData.completed_at = new Date().toISOString();
+            capturedData.total_products_viewed = 3;
+            capturedData.final_cart = cartItems;
+            capturedData.product_completion = productCompleted;
+
+            const payload = capturedData;
+
+            if (window.parent !== window) {
+                try {
+                    window.parent.postMessage({
+                        type: 'qualTRICS_DATA',
+                        data: payload
+                    }, '*');
+                } catch (e) {
+                    console.log('Could not send data to parent');
+                }
+            }
+
+            const hashData = btoa(JSON.stringify(payload));
+            window.location.hash = 'data=' + hashData;
+
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'simulation_data';
+            hiddenInput.value = JSON.stringify(payload);
+            document.getElementById('app').appendChild(hiddenInput);
+
+            console.log('📤 FINAL PAYLOAD:', payload);
+
+            showCompletionPage();
+        }
+
+        // ================================================================
+        // 15. INIT
+        // ================================================================
+
+        initDots();
+        showListingGrid();
+        updateNavButtons();
+        nextProductBtn.textContent = 'Next Product →';
+        
+        products.forEach(p => {
+            cartItems[p.id] = null;
+            productCompleted[p.id] = false;
+        });
+        
+        checkAndUpdateNextButton();
+
+        logData('page_loaded', new Date().toISOString());
+        logData('study_version', '6.0');
+        logData('total_products', 3);
+        logData('listings_per_product', 8);
+
+        console.log('🚀 Temu Study Simulation ready!');
+        console.log(`📦 ${products.length} products × 8 listings (shuffled) × 3 images = 72 total images`);
+        console.log('📋 Data captured in #data-log div');
+    </script>
+
+</body>
+</html>
