@@ -270,6 +270,18 @@
             animation: none;
             background: #888;
         }
+        
+        /* Utility to hide elements */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Visceral cue style for expired flash sale */
+        .visceral-cue.flash-sale-expired {
+            background: linear-gradient(135deg, #9e9e9e, #616161);
+            animation: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
 
         /* ===== PRICE SECTION ===== */
         .price-section {
@@ -2191,9 +2203,6 @@
                 return;
             }
             
-            // Show the countdown
-            flashSaleCountdown.style.display = 'flex';
-            
             // If timer hasn't started for this product yet (e.g., user navigated via direct URL),
             // start it now as a fallback
             if (!flashSaleStarted[productId]) {
@@ -2201,13 +2210,61 @@
             }
             
             const remaining = flashSaleEndTime[productId] - Date.now();
-            flashSaleTimer.textContent = formatTimeRemaining(remaining);
+            const expired = remaining <= 0;
             
-            if (remaining <= 0) {
+            // Show the countdown (either counting down or expired state)
+            flashSaleCountdown.style.display = 'flex';
+            
+            if (expired) {
                 flashSaleCountdown.classList.add('expired');
                 flashSaleTimer.textContent = 'EXPIRED';
             } else {
                 flashSaleCountdown.classList.remove('expired');
+                flashSaleTimer.textContent = formatTimeRemaining(remaining);
+            }
+            
+            // Apply the visual "discount removed" state if the timer has expired
+            applyDiscountState(listing, expired);
+        }
+        
+        // Applies or removes the discount visuals on the product detail page
+        // based on whether the flash sale has expired.
+        function applyDiscountState(listing, expired) {
+            if (!hasFlashSale(listing)) return; // Non-flash-sale listings are untouched
+            
+            if (expired) {
+                // Hide the struck-through original price and the discount %
+                priceOriginal.classList.add('hidden');
+                priceDiscount.classList.add('hidden');
+                
+                // Set the current price to the ORIGINAL price
+                const origStr = listing.originalPrice.toFixed(2);
+                const origParts = origStr.split('.');
+                priceCurrent.innerHTML = `<small>$</small>${origParts[0]}.<small>${origParts[1]}</small>`;
+                
+                // Update the savings line
+                priceSavings.textContent = `Flash sale has ended`;
+                priceSavings.style.color = '#888';
+                
+                // Replace the "Flash Sale" visceral cue with an "Ended" tag
+                const cueSpans = visceralCuesContainer.querySelectorAll('.visceral-cue');
+                cueSpans.forEach(span => {
+                    if (span.classList.contains('flash-sale') || span.classList.contains('flash-sale-ends')) {
+                        span.classList.remove('flash-sale', 'flash-sale-ends');
+                        span.classList.add('flash-sale-expired');
+                        span.textContent = '⏱️ Sale Ended';
+                        span.style.animation = 'none';
+                    }
+                });
+            } else {
+                // Restore the discounted display (in case the user navigated back
+                // to a non-expired listing or the timer state changed)
+                priceOriginal.classList.remove('hidden');
+                priceDiscount.classList.remove('hidden');
+                priceSavings.style.color = ''; // restore default red
+                
+                // The discounted price is re-rendered by renderProductDetail(),
+                // so nothing else to do here.
             }
         }
 
@@ -2483,6 +2540,12 @@
                 carouselImage3.alt = `${displayTitle} - Image 3`;
             }
 
+            // Reset discount-related elements to visible/red by default.
+            // (They may have been hidden by a prior expired flash sale.)
+            priceOriginal.classList.remove('hidden');
+            priceDiscount.classList.remove('hidden');
+            priceSavings.style.color = '';
+            
             const priceStr = listing.price.toFixed(2);
             const priceParts = priceStr.split('.');
             priceCurrent.innerHTML = `<small>$</small>${priceParts[0]}.<small>${priceParts[1]}</small>`;
@@ -2495,6 +2558,16 @@
                 priceSavings.textContent = `🔥 Flash sale · You save $${savings}`;
             } else {
                 priceSavings.textContent = `You save $${savings}`;
+            }
+            
+            // Apply the expired state if the timer already ran out for this product
+            if (hasFlashSale(listing) && flashSaleStarted[products[currentProductIndex].id]) {
+                const remaining = flashSaleEndTime[products[currentProductIndex].id] - Date.now();
+                if (remaining <= 0) {
+                    // The timer will pick this up within 1 second, but we apply it immediately
+                    // here so there's no flash of the discounted price.
+                    setTimeout(() => applyDiscountState(listing, true), 0);
+                }
             }
 
             productTitle.textContent = displayTitle;
