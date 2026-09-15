@@ -29,7 +29,7 @@
             min-height: 100vh;
         }
 
-        /* ===== TEMU HEADER ===== */
+        /* ===== EMU HEADER ===== */
         .emu-header {
             background: #e43d2c;
             padding: 12px 16px;
@@ -181,6 +181,15 @@
             }
         }
 
+        @keyframes flashPulse {
+            0%, 100% {
+                background: linear-gradient(135deg, #ff6b35, #e43d2c);
+            }
+            50% {
+                background: linear-gradient(135deg, #e43d2c, #b32a1b);
+            }
+        }
+
         .carousel-btn {
             position: absolute;
             top: 50%;
@@ -227,6 +236,39 @@
             background: #e43d2c;
             width: 24px;
             border-radius: 4px;
+        }
+
+        /* ===== FLASH SALE COUNTDOWN ===== */
+        .flash-sale-countdown {
+            background: linear-gradient(135deg, #ff6b35, #e43d2c);
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 700;
+            animation: flashPulse 2s infinite;
+            border-bottom: 1px solid #cc3525;
+        }
+
+        .flash-sale-countdown .label {
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        .flash-sale-countdown .timer {
+            font-size: 1.1rem;
+            font-family: 'Courier New', monospace;
+            font-weight: 800;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 12px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+        }
+
+        .flash-sale-countdown.expired {
+            animation: none;
+            background: #888;
         }
 
         /* ===== PRICE SECTION ===== */
@@ -376,7 +418,6 @@
             animation: glow 2s infinite;
         }
 
-        /* Individual cue colors based on type */
         .visceral-cue.flash-sale {
             background: linear-gradient(135deg, #ff6b35, #e43d2c);
         }
@@ -417,7 +458,6 @@
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
         }
 
-        /* Individual card cue colors */
         .card-visceral-cue.flash-sale {
             background: linear-gradient(135deg, #ff6b35, #e43d2c);
         }
@@ -1144,6 +1184,12 @@
                 <!-- Back Button -->
                 <button class="back-btn" id="backToListingBtn">← Back to listings</button>
 
+                <!-- Flash Sale Countdown Timer -->
+                <div class="flash-sale-countdown" id="flashSaleCountdown" style="display: none;">
+                    <span class="label">🔥 FLASH SALE ENDS IN</span>
+                    <span class="timer" id="flashSaleTimer">15:00</span>
+                </div>
+
                 <!-- Carousel -->
                 <div class="carousel-container">
                     <div class="carousel-track" id="carouselTrack">
@@ -1317,6 +1363,9 @@
         
         const IMAGE_BASE = 'images/';
         
+        // Flash sale duration: 15 minutes in milliseconds
+        const FLASH_SALE_DURATION_MS = 15 * 60 * 1000;
+        
         // Fisher-Yates shuffle (unbiased)
         function shuffleArray(array) {
             const shuffled = [...array];
@@ -1330,54 +1379,25 @@
         // ================================================================
         // RANDOMIZATION STRATEGY (for psychology research - prevents order effects)
         // ================================================================
-        // We use a "circular shift" approach:
-        //   1. Randomly pick an offset (0-7) for each product
-        //   2. Shift the underlying listings array by that offset
-        //   3. Each displayed position is then labeled "Product #N" (N = position, 1-8)
-        //
-        // This means:
-        //   - The displayed ORDER of labels is always #1, #2, ..., #8 (consistent UX)
-        //   - BUT which actual listing data appears at each label is randomized
-        //   - The same listing data always carries its identity (via `_originalIndex`)
-        //     so data analysis can trace which true listing was chosen.
-        //
-        // Example: If offset = 3 for product 1, then:
-        //   - Display #1 shows what was originally listing 4
-        //   - Display #2 shows what was originally listing 5
-        //   - ...
-        //   - Display #8 shows what was originally listing 3
-        //
-        // Data captured still references the true listing via `_originalIndex` and
-        // `listingId`, so analysis is not affected by the display randomization.
-        // ================================================================
-        
         function createRandomizedListings(originalListings, productId) {
-            // Step 1: Determine a random offset for this product
             const offset = Math.floor(Math.random() * originalListings.length);
-            
-            // Step 2: Create the circularly-shifted array
             const shifted = [];
             for (let i = 0; i < originalListings.length; i++) {
                 const originalIdx = (i + offset) % originalListings.length;
-                // Keep a reference to the true original index for data analysis
                 shifted.push({
                     ...originalListings[originalIdx],
                     _originalIndex: originalIdx
                 });
             }
-            
-            // Log the offset for this product (useful for debugging / verification)
             console.log(`🎲 Product ${productId} randomized with offset ${offset} (display #1 = true listing #${offset + 1})`);
-            
             return { listings: shifted, offset: offset };
         }
         
         // Helper function to format visceral cues with emojis and determine CSS class
         function formatVisceralCue(cue, listing) {
             if (cue === 'Low stock') {
-                // Cache the random number on the listing object so it stays consistent
                 if (listing && listing._lowStockNumber === undefined) {
-                    listing._lowStockNumber = Math.floor(Math.random() * 9) + 1; // 1-9
+                    listing._lowStockNumber = Math.floor(Math.random() * 9) + 1;
                 }
                 const num = (listing && listing._lowStockNumber !== undefined) 
                     ? listing._lowStockNumber 
@@ -1391,6 +1411,13 @@
                 'Flash sale ends soon': { text: '⏰ Flash Sale Ends', cssClass: 'flash-sale-ends' }
             };
             return cueMap[cue] || { text: cue, cssClass: '' };
+        }
+        
+        // Check whether a listing has a flash sale cue
+        function hasFlashSale(listing) {
+            return listing.visceralCues && listing.visceralCues.some(c => 
+                c === 'Flash sale' || c === 'Flash sale ends soon'
+            );
         }
         
         const rawProducts = [{
@@ -2039,6 +2066,9 @@
         const carouselImage2 = $('carouselImage2');
         const carouselImage3 = $('carouselImage3');
 
+        const flashSaleCountdown = $('flashSaleCountdown');
+        const flashSaleTimer = $('flashSaleTimer');
+
         const priceCurrent = $('priceCurrent');
         const priceOriginal = $('priceOriginal');
         const priceDiscount = $('priceDiscount');
@@ -2076,7 +2106,7 @@
         const popupCancel = $('popupCancel');
 
         const viewCartBtn = $('viewCartBtn');
-        const temuHeaderIcons = document.querySelector('.emu-header-icons');
+        const emuHeaderIcons = document.querySelector('.emu-header-icons');
         const cartPage = $('cartPage');
         const cartItemsContainer = $('cartItemsContainer');
         const backToShopBtn = $('backToShopBtn');
@@ -2098,16 +2128,94 @@
         let productCompleted = {};
         let pendingListingIndex = null;
 
+        // Flash sale countdown state
+        // flashSaleEndTime[productId] = timestamp (ms) when flash sale ends for that product
+        // flashSaleStarted[productId] = true once we've started the countdown for this product
+        let flashSaleEndTime = {};
+        let flashSaleStarted = {};
+        let flashSaleTimerInterval = null;
+
         let capturedData = {
             participant_id: null,
             product_selections: [],
             carousel_interactions: {},
             cart_actions: [],
             randomization_offsets: randomizationOffsets,
+            flash_sale_timings: {},   // filled in when submitFinalData runs
             timestamp: new Date().toISOString()
         };
 
         const totalSlides = 3;
+
+        // ================================================================
+        // FLASH SALE TIMER FUNCTIONS
+        // ================================================================
+
+        // Start (or resume) the flash sale countdown for a product.
+        // Only starts once per product per session.
+        function ensureFlashSaleTimerStarted(productId) {
+            if (!flashSaleStarted[productId]) {
+                flashSaleStarted[productId] = true;
+                flashSaleEndTime[productId] = Date.now() + FLASH_SALE_DURATION_MS;
+                console.log(`⏱️ Flash sale timer started for product ${productId} (ends at ${new Date(flashSaleEndTime[productId]).toLocaleTimeString()})`);
+                logData('flash_sale_started', {
+                    productId: productId,
+                    startTime: new Date().toISOString(),
+                    endTime: new Date(flashSaleEndTime[productId]).toISOString(),
+                    durationMs: FLASH_SALE_DURATION_MS
+                });
+            }
+        }
+
+        // Format milliseconds into MM:SS
+        function formatTimeRemaining(ms) {
+            if (ms <= 0) return '00:00';
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Update the timer display on the product detail page
+        function updateFlashSaleTimerDisplay() {
+            // Only relevant on the detail page
+            if (!isOnDetailPage) return;
+            
+            const product = products[currentProductIndex];
+            const productId = product.id;
+            const listing = product.listings[currentListingIndex];
+            
+            // Show only if the current listing has a flash sale cue
+            if (!hasFlashSale(listing)) {
+                flashSaleCountdown.style.display = 'none';
+                return;
+            }
+            
+            // Show the countdown
+            flashSaleCountdown.style.display = 'flex';
+            
+            // If timer hasn't started for this product yet (e.g., user navigated via direct URL),
+            // start it now as a fallback
+            if (!flashSaleStarted[productId]) {
+                ensureFlashSaleTimerStarted(productId);
+            }
+            
+            const remaining = flashSaleEndTime[productId] - Date.now();
+            flashSaleTimer.textContent = formatTimeRemaining(remaining);
+            
+            if (remaining <= 0) {
+                flashSaleCountdown.classList.add('expired');
+                flashSaleTimer.textContent = 'EXPIRED';
+            } else {
+                flashSaleCountdown.classList.remove('expired');
+            }
+        }
+
+        // Start a single interval that updates the timer every second
+        function startFlashSaleTimerLoop() {
+            if (flashSaleTimerInterval) return;
+            flashSaleTimerInterval = setInterval(updateFlashSaleTimerDisplay, 1000);
+        }
 
         // ================================================================
         // 4. PAGE NAVIGATION
@@ -2145,10 +2253,16 @@
             completionPage.style.display = 'none';
             progressSection.style.display = 'block';
             navSection.style.display = 'flex';
-            temuHeaderIcons.style.display = 'flex';
+            emuHeaderIcons.style.display = 'flex';
+            flashSaleCountdown.style.display = 'none'; // hide timer on grid page
             updateProgressBar();
             renderListingGridCards();
             scrollToTop();
+            
+            // Start the flash sale countdown for the current product
+            // (the moment the participant lands on the grid page for this product)
+            const currentProduct = products[currentProductIndex];
+            ensureFlashSaleTimerStarted(currentProduct.id);
             
             const product = products[currentProductIndex];
             showStatus(`Viewing listings for ${product.name}`);
@@ -2168,12 +2282,15 @@
             completionPage.style.display = 'none';
             progressSection.style.display = 'block';
             navSection.style.display = 'flex';
-            temuHeaderIcons.style.display = 'flex';
+            emuHeaderIcons.style.display = 'flex';
             updateProgressBar();
             renderProductDetail();
             goToSlide(0);
             scrollToTop();
             updateCartButton();
+            
+            // Update the flash sale timer display immediately
+            updateFlashSaleTimerDisplay();
             
             const product = products[currentProductIndex];
             const listing = product.listings[currentListingIndex];
@@ -2195,7 +2312,8 @@
             completionPage.style.display = 'none';
             progressSection.style.display = 'none';
             navSection.style.display = 'none';
-            temuHeaderIcons.style.display = 'none';
+            emuHeaderIcons.style.display = 'none';
+            flashSaleCountdown.style.display = 'none';
             renderCartItems();
             scrollToTop();
         }
@@ -2213,7 +2331,8 @@
             completionPage.classList.add('active');
             progressSection.style.display = 'none';
             navSection.style.display = 'none';
-            temuHeaderIcons.style.display = 'none';
+            emuHeaderIcons.style.display = 'none';
+            flashSaleCountdown.style.display = 'none';
             scrollToTop();
         }
 
@@ -2226,21 +2345,12 @@
             const productId = product.id;
             listingGridCards.innerHTML = '';
             
-            // NOTE: We no longer sort by _originalIndex.
-            // The listings array is already in the randomized display order
-            // (from createRandomizedListings). Display position determines the
-            // "#N" label. The true identity is preserved in `listing.id` and
-            // `listing._originalIndex` for data analysis.
-            
             product.listings.forEach((listing, index) => {
                 const card = document.createElement('div');
                 card.className = 'listing-card';
                 
                 const firstImage = listing.images && listing.images.length > 0 ? listing.images[0] : '';
                 
-                // ================================================================
-                // CARD STARS - Gradient Fill Support
-                // ================================================================
                 const rating = listing.reviews === 0 ? 0 : listing.rating;
                 const percentage = (rating / 5) * 100;
 
@@ -2251,9 +2361,6 @@
                     </span>
                 `;
                 
-                // ================================================================
-                // CARD VISCERAL CUES - Colorful tags
-                // ================================================================
                 let visceralCuesHTML = '';
                 if (listing.visceralCues && listing.visceralCues.length > 0) {
                     const cueSpans = listing.visceralCues
@@ -2267,7 +2374,6 @@
                     }
                 }
                 
-                // Display label is based on POSITION in the randomized order (1-8)
                 const displayNumber = index + 1;
                 const displayTitle = `${product.name} #${displayNumber}`;
                 
@@ -2356,7 +2462,6 @@
             const product = products[currentProductIndex];
             const listing = product.listings[currentListingIndex];
 
-            // Display label is based on POSITION in the randomized order
             const displayNumber = currentListingIndex + 1;
             const displayTitle = `${product.name} #${displayNumber}`;
 
@@ -2390,7 +2495,7 @@
             productSubtitle.textContent = product.subtitle;
 
             // ================================================================
-            // PRODUCT STARS - If 0 reviews, show 0 stars
+            // PRODUCT STARS
             // ================================================================
             const rating = listing.reviews === 0 ? 0 : listing.rating;
             const percentage = (rating / 5) * 100;
@@ -2417,7 +2522,7 @@
             reviewCount.textContent = listing.reviews.toLocaleString();
 
             // ================================================================
-            // VISCERAL CUES - Colorful tags on detail page
+            // VISCERAL CUES
             // ================================================================
             visceralCuesContainer.innerHTML = '';
             
@@ -2433,7 +2538,7 @@
             }
 
             // ================================================================
-            // REVIEWS - Full Customization Support
+            // REVIEWS
             // ================================================================
             
             const defaultReviews = [
@@ -2682,7 +2787,6 @@
                     const listing = product.listings[cartIndex];
                     const firstImage = listing.images && listing.images.length > 0 ? listing.images[0] : '';
                     
-                    // Display label uses the position in the randomized order
                     const displayNumber = cartIndex + 1;
                     const displayTitle = `${product.name} #${displayNumber}`;
                     
@@ -2777,6 +2881,14 @@
                 capturedData.cart_actions.push(value);
             } else if (key === 'carousel_interactions') {
                 capturedData.carousel_interactions = value;
+            } else if (key === 'flash_sale_started') {
+                // Store flash sale start info per product
+                if (!capturedData.flash_sale_timings) capturedData.flash_sale_timings = {};
+                capturedData.flash_sale_timings[value.productId] = {
+                    startTime: value.startTime,
+                    endTime: value.endTime,
+                    durationMs: value.durationMs
+                };
             }
 
             dataLog.textContent = JSON.stringify(capturedData);
@@ -2917,6 +3029,23 @@
             capturedData.final_cart = cartItems;
             capturedData.product_completion = productCompleted;
 
+            // Capture final flash sale timing state for each product
+            const finalTimings = {};
+            products.forEach(p => {
+                if (flashSaleStarted[p.id]) {
+                    const endTime = flashSaleEndTime[p.id];
+                    finalTimings[p.id] = {
+                        started: true,
+                        endTime: new Date(endTime).toISOString(),
+                        remainingMsAtSubmit: Math.max(0, endTime - Date.now()),
+                        expired: endTime <= Date.now()
+                    };
+                } else {
+                    finalTimings[p.id] = { started: false };
+                }
+            });
+            capturedData.flash_sale_timings_final = finalTimings;
+
             const payload = capturedData;
 
             if (window.parent !== window) {
@@ -2960,12 +3089,15 @@
         
         checkAndUpdateNextButton();
 
+        // Start the timer loop (runs every second, updates display when on detail page)
+        startFlashSaleTimerLoop();
+
         logData('page_loaded', new Date().toISOString());
         logData('study_version', '6.0');
         logData('total_products', 3);
         logData('listings_per_product', 8);
 
-        console.log('🚀 Temu Study Simulation ready!');
+        console.log('🚀 Emu Study Simulation ready!');
         console.log(`📦 ${products.length} products × 8 listings (shuffled) × 3 images = 72 total images`);
         console.log('📋 Data captured in #data-log div');
     </script>
