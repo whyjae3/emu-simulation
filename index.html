@@ -1432,6 +1432,26 @@
             );
         }
         
+        // Returns the effective price for a listing, accounting for flash sale expiry.
+        // If the listing has a flash sale cue but the timer has expired, the original
+        // price applies. Otherwise, the discounted price applies.
+        function getEffectivePrice(listing, productId) {
+            if (hasFlashSale(listing) && flashSaleStarted[productId]) {
+                const remaining = flashSaleEndTime[productId] - Date.now();
+                if (remaining <= 0) {
+                    return listing.originalPrice;
+                }
+            }
+            return listing.price;
+        }
+        
+        // Returns whether the flash sale for this listing is currently expired.
+        function isFlashSaleExpired(listing, productId) {
+            return hasFlashSale(listing)
+                && flashSaleStarted[productId]
+                && (flashSaleEndTime[productId] - Date.now()) <= 0;
+        }
+        
         const rawProducts = [{
             id: 1,
             name: 'Rolling Storage Cart',
@@ -2742,6 +2762,11 @@
             const listing = product.listings[listingIndex];
             
             cartItems[productId] = listingIndex;
+            
+            // Determine the effective price at the moment of adding
+            const effectivePrice = getEffectivePrice(listing, productId);
+            const flashSaleExpired = isFlashSaleExpired(listing, productId);
+            
             logData('cart_action', {
                 productId: productId,
                 listingId: listing.id,
@@ -2749,6 +2774,9 @@
                 displayNumber: listingIndex + 1,
                 originalIndex: listing._originalIndex,
                 action: 'added',
+                priceAtAdd: effectivePrice,
+                wasDiscounted: !flashSaleExpired,
+                flashSaleExpired: flashSaleExpired,
                 timestamp: new Date().toISOString()
             });
             
@@ -2869,8 +2897,17 @@
                     const displayNumber = cartIndex + 1;
                     const displayTitle = `${product.name} #${displayNumber}`;
                     
+                    // Use the effective price (original if the flash sale has expired)
+                    const effectivePrice = getEffectivePrice(listing, product.id);
+                    const expired = isFlashSaleExpired(listing, product.id);
+                    
                     totalItems++;
-                    totalPrice += listing.price;
+                    totalPrice += effectivePrice;
+                    
+                    // Optional: small annotation if the flash sale expired after adding
+                    const priceAnnotation = expired
+                        ? '<div style="font-size:0.6rem;color:#888;font-weight:600;">Flash sale ended</div>'
+                        : '';
                     
                     itemsHTML += `
                         <div class="cart-item" data-product-id="${product.id}" data-listing-index="${cartIndex}">
@@ -2878,8 +2915,9 @@
                             <div class="item-info">
                                 <div class="item-name">${displayTitle}</div>
                                 <div class="item-status">${isCompleted ? '✅ Completed' : '🔄 In progress'}</div>
+                                ${priceAnnotation}
                             </div>
-                            <div class="item-price">$${listing.price.toFixed(2)}</div>
+                            <div class="item-price">$${effectivePrice.toFixed(2)}</div>
                         </div>
                     `;
                 } else {
@@ -3107,6 +3145,31 @@
             capturedData.total_products_viewed = 3;
             capturedData.final_cart = cartItems;
             capturedData.product_completion = productCompleted;
+            
+            // Capture the effective price for each item in the final cart
+            // (reflects whether the flash sale had expired at submit time)
+            capturedData.final_cart_prices = {};
+            let grandTotal = 0;
+            products.forEach(p => {
+                const cartIdx = cartItems[p.id];
+                if (cartIdx !== null && cartIdx !== undefined) {
+                    const listing = p.listings[cartIdx];
+                    const effectivePrice = getEffectivePrice(listing, p.id);
+                    const expired = isFlashSaleExpired(listing, p.id);
+                    capturedData.final_cart_prices[p.id] = {
+                        listingId: listing.id,
+                        displayNumber: cartIdx + 1,
+                        originalIndex: listing._originalIndex,
+                        regularPrice: listing.price,
+                        originalPrice: listing.originalPrice,
+                        effectivePrice: effectivePrice,
+                        flashSaleExpired: expired,
+                        wasDiscounted: !expired && hasFlashSale(listing)
+                    };
+                    grandTotal += effectivePrice;
+                }
+            });
+            capturedData.final_cart_total = Math.round(grandTotal * 100) / 100;
 
             // Capture final flash sale timing state for each product
             const finalTimings = {};
