@@ -3145,6 +3145,71 @@
             capturedData.total_products_viewed = 3;
             capturedData.final_cart = cartItems;
             capturedData.product_completion = productCompleted;
+
+            // ================================================================
+            // SUMMARY COUNTS — BASED ON FINAL CART ONLY
+            // ================================================================
+            // This block computes summary metrics from the FINAL CART only —
+            // i.e., the listings that survived to checkout. This is the cleanest
+            // measure of "which listings did the participant choose."
+            // ================================================================
+            
+            const finalCartSummary = {
+                total_items: 0,
+                scam_items: 0,
+                non_scam_items: 0,
+                total_scam_cues: 0,
+                total_visceral_cues: 0,
+                scam_listing_ids: [],       // array of listingIds (true IDs) that were scams
+                non_scam_listing_ids: [],   // array of listingIds that were non-scams
+                items: []                    // full per-item detail
+            };
+            
+            products.forEach(p => {
+                const cartIdx = cartItems[p.id];
+                if (cartIdx === null || cartIdx === undefined) return;
+            
+                const listing = p.listings[cartIdx];
+                const isScam = listing.type === 'scam';
+            
+                finalCartSummary.total_items += 1;
+                if (isScam) {
+                    finalCartSummary.scam_items += 1;
+                    finalCartSummary.scam_listing_ids.push(listing.id);
+                } else {
+                    finalCartSummary.non_scam_items += 1;
+                    finalCartSummary.non_scam_listing_ids.push(listing.id);
+                }
+            
+                finalCartSummary.total_scam_cues += (listing.scamCues ? listing.scamCues.length : 0);
+                finalCartSummary.total_visceral_cues += (listing.visceralCues ? listing.visceralCues.length : 0);
+            
+                finalCartSummary.items.push({
+                    productId: p.id,
+                    listingId: listing.id,
+                    listingType: listing.type,
+                    displayNumber: cartIdx + 1,
+                    originalIndex: listing._originalIndex,
+                    scamCueCount: listing.scamCues ? listing.scamCues.length : 0,
+                    visceralCueCount: listing.visceralCues ? listing.visceralCues.length : 0,
+                    scamCues: listing.scamCues || [],
+                    visceralCues: listing.visceralCues || []
+                });
+            });
+            
+            // Attach the summary to the payload
+            capturedData.summary_final_cart = finalCartSummary;
+            
+            // Also expose the key counts as flat scalar fields for easy CSV columns
+            capturedData.final_cart_scam_count = finalCartSummary.scam_items;
+            capturedData.final_cart_non_scam_count = finalCartSummary.non_scam_items;
+            capturedData.final_cart_scam_cue_total = finalCartSummary.total_scam_cues;
+            capturedData.final_cart_visceral_cue_total = finalCartSummary.total_visceral_cues;
+            capturedData.final_cart_scam_listing_ids = finalCartSummary.scam_listing_ids.join(',');
+            
+            // ================================================================
+            // END SUMMARY COUNTS
+            // ================================================================
             
             // Capture the effective price for each item in the final cart
             // (reflects whether the flash sale had expired at submit time)
