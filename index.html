@@ -3147,65 +3147,90 @@
             capturedData.product_completion = productCompleted;
 
             // ================================================================
-            // SUMMARY COUNTS — BASED ON FINAL CART ONLY
+            // SUMMARY COUNTS — FINAL CART ONLY, BROKEN OUT BY CUE TYPE
             // ================================================================
-            // This block computes summary metrics from the FINAL CART only —
-            // i.e., the listings that survived to checkout. This is the cleanest
-            // measure of "which listings did the participant choose."
+            // For each possible scam cue and visceral cue, count how many of the
+            // participant's final-cart listings carried that cue.
+            // Since each participant picks 1 listing per product (3 products),
+            // the max count per cue is 3.
             // ================================================================
             
-            const finalCartSummary = {
-                total_items: 0,
-                scam_items: 0,
-                non_scam_items: 0,
-                total_scam_cues: 0,
-                total_visceral_cues: 0,
-                scam_listing_ids: [],       // array of listingIds (true IDs) that were scams
-                non_scam_listing_ids: [],   // array of listingIds that were non-scams
-                items: []                    // full per-item detail
-            };
+            // Master lists of all possible cues (must match rawProducts exactly)
+            const ALL_SCAM_CUES = [
+                'Mismatches across images',
+                'Low num of reviews',
+                'Suspicious seller'
+            ];
             
+            const ALL_VISCERAL_CUES = [
+                'Flash sale',
+                'Low stock',
+                'Low price'
+            ];
+            
+            // Initialize counters to zero
+            const scamCueCounts = {};
+            const visceralCueCounts = {};
+            ALL_SCAM_CUES.forEach(c => { scamCueCounts[c] = 0; });
+            ALL_VISCERAL_CUES.forEach(c => { visceralCueCounts[c] = 0; });
+            
+            // Also track totals for convenience
+            let totalItems = 0;
+            let scamItems = 0;
+            let nonScamItems = 0;
+            const scamListingIds = [];
+            const nonScamListingIds = [];
+            
+            // Iterate over the final cart
             products.forEach(p => {
                 const cartIdx = cartItems[p.id];
                 if (cartIdx === null || cartIdx === undefined) return;
             
                 const listing = p.listings[cartIdx];
-                const isScam = listing.type === 'scam';
+                totalItems += 1;
             
-                finalCartSummary.total_items += 1;
-                if (isScam) {
-                    finalCartSummary.scam_items += 1;
-                    finalCartSummary.scam_listing_ids.push(listing.id);
+                if (listing.type === 'scam') {
+                    scamItems += 1;
+                    scamListingIds.push(listing.id);
                 } else {
-                    finalCartSummary.non_scam_items += 1;
-                    finalCartSummary.non_scam_listing_ids.push(listing.id);
+                    nonScamItems += 1;
+                    nonScamListingIds.push(listing.id);
                 }
             
-                finalCartSummary.total_scam_cues += (listing.scamCues ? listing.scamCues.length : 0);
-                finalCartSummary.total_visceral_cues += (listing.visceralCues ? listing.visceralCues.length : 0);
+                // Count each scam cue present on this listing
+                (listing.scamCues || []).forEach(cue => {
+                    if (scamCueCounts[cue] === undefined) {
+                        scamCueCounts[cue] = 0; // handle any cue not in master list
+                    }
+                    scamCueCounts[cue] += 1;
+                });
             
-                finalCartSummary.items.push({
-                    productId: p.id,
-                    listingId: listing.id,
-                    listingType: listing.type,
-                    displayNumber: cartIdx + 1,
-                    originalIndex: listing._originalIndex,
-                    scamCueCount: listing.scamCues ? listing.scamCues.length : 0,
-                    visceralCueCount: listing.visceralCues ? listing.visceralCues.length : 0,
-                    scamCues: listing.scamCues || [],
-                    visceralCues: listing.visceralCues || []
+                // Count each visceral cue present on this listing
+                (listing.visceralCues || []).forEach(cue => {
+                    if (!cue || cue.trim() === '') return;
+                    if (visceralCueCounts[cue] === undefined) {
+                        visceralCueCounts[cue] = 0;
+                    }
+                    visceralCueCounts[cue] += 1;
                 });
             });
             
-            // Attach the summary to the payload
-            capturedData.summary_final_cart = finalCartSummary;
+            // Attach to payload
+            capturedData.final_cart_scam_count = scamItems;
+            capturedData.final_cart_non_scam_count = nonScamItems;
+            capturedData.final_cart_scam_listing_ids = scamListingIds.join(',');
+            capturedData.final_cart_non_scam_listing_ids = nonScamListingIds.join(',');
+            capturedData.scam_cue_counts = scamCueCounts;         // object: {"Mismatches across images": 1, ...}
+            capturedData.visceral_cue_counts = visceralCueCounts; // object: {"Flash sale": 2, ...}
             
-            // Also expose the key counts as flat scalar fields for easy CSV columns
-            capturedData.final_cart_scam_count = finalCartSummary.scam_items;
-            capturedData.final_cart_non_scam_count = finalCartSummary.non_scam_items;
-            capturedData.final_cart_scam_cue_total = finalCartSummary.total_scam_cues;
-            capturedData.final_cart_visceral_cue_total = finalCartSummary.total_visceral_cues;
-            capturedData.final_cart_scam_listing_ids = finalCartSummary.scam_listing_ids.join(',');
+            // Also expose as flat scalar fields for direct CSV columns
+            capturedData.scam_cue_mismatches_count = scamCueCounts['Mismatches across images'] || 0;
+            capturedData.scam_cue_low_reviews_count = scamCueCounts['Low num of reviews'] || 0;
+            capturedData.scam_cue_suspicious_seller_count = scamCueCounts['Suspicious seller'] || 0;
+            
+            capturedData.visceral_cue_flash_sale_count = visceralCueCounts['Flash sale'] || 0;
+            capturedData.visceral_cue_low_stock_count = visceralCueCounts['Low stock'] || 0;
+            capturedData.visceral_cue_low_price_count = visceralCueCounts['Low price'] || 0;
             
             // ================================================================
             // END SUMMARY COUNTS
